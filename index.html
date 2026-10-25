@@ -177,6 +177,22 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .msg .tr { font-size: 0.88rem; color: var(--muted); font-style: italic; }
 .msg .fix { font-size: 0.88rem; background: var(--sun-soft); border-radius: 8px; padding: 6px 8px; }
 .composer { display: flex; gap: 8px; }
+.rp-end { color: var(--accent); font-weight: 800; }
+.rp-change { background: var(--sun-soft); border-radius: 4px; padding: 0 1px; text-decoration: underline wavy var(--bad); text-underline-offset: 3px; }
+.root-card { display: grid; gap: 4px; justify-items: start; }
+.root-word { font-family: var(--font-display); font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.route-step { display: grid; gap: 2px; padding-left: 16px; border-left: 3px solid var(--accent-soft); }
+.route-form, .slot-form { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; overflow-wrap: anywhere; }
+.slots { display: grid; gap: 8px; }
+.slot { display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left; border: 2px dashed var(--line); background: var(--surface); border-radius: 14px; padding: 10px 14px; min-height: 64px; }
+.slot.active { border-color: var(--accent); border-style: solid; }
+.slot.filled { border-style: solid; border-color: var(--good); background: var(--good-soft); cursor: default; opacity: 1; }
+.slot-label { display: grid; gap: 2px; min-width: 0; }
+.slot-form { font-size: 1.3rem; color: var(--muted); }
+.slot.filled .slot-form { color: var(--fg); }
+.pool { display: flex; flex-wrap: wrap; gap: 8px; }
+.pool-chip { font-size: 1.05rem; padding: 10px 14px; }
+.pool-chip.wrong { border-color: var(--bad); background: var(--bad-soft); }
 .seg-t { font-weight: 700; color: var(--accent); }
 .seg.now { background: var(--sun-soft); border-radius: 4px; box-shadow: 0 0 0 2px var(--sun-soft); }
 details summary { cursor: pointer; }
@@ -574,7 +590,7 @@ function viewHome(el) {
       <button class="action" data-go="stories"><span class="eyebrow">Read</span><b>Short stories</b><span class="small muted">${S.storiesDone.length} of ${STORIES.length} finished</span></button>
       <button class="action" data-go="talk"><span class="eyebrow">Speak</span><b>Role-play chat</b><span class="small muted">Café, hotel, doctor…</span></button>
       <button class="action" data-go="practice" data-mode="listen"><span class="eyebrow">Listen</span><b>Ear training</b><span class="small muted">Hear it, pick the meaning</span></button>
-      <button class="action" data-go="practice" data-mode="coach"><span class="eyebrow">AI · Voice</span><b>Verb coach</b><span class="small muted">Learn verb patterns by ear</span></button>
+      <button class="action" data-go="practice" data-mode="roots"><span class="eyebrow">Grammar</span><b>Root builder</b><span class="small muted">See how verbs grow from a stem</span></button>
     </div>
     <div class="card">
       <div class="row between" style="margin-bottom:10px"><h3>This week</h3><span class="small muted">${totalLearned} phrases learned · 🔥 ${streakNow()} day streak</span></div>
@@ -786,12 +802,12 @@ function viewPractice(el) {
   if (sub && sub.type === "listen") return viewQuiz(el, true);
   if (sub && sub.type === "verbs") return viewVerbs(el);
   if (sub && sub.type === "write") return viewWrite(el);
-  if (sub && sub.type === "coach") return viewCoach(el);
+  if (sub && sub.type === "roots") return viewRoots(el);
   el.innerHTML = `
     <h1>Práctica</h1>
     <p class="muted">Short drills. Each round is 10 questions.</p>
     <div class="story-list">
-      <button class="story-item" data-m="coach"><span class="lvl">AI</span><span><h3>Verb coach</h3><span class="small muted">An AI teacher explains verb patterns out loud</span></span><span class="small muted">›</span></button>
+      <button class="story-item" data-m="roots"><span class="lvl">habl-</span><span><h3>Root builder</h3><span class="small muted">See how each verb form is built from its stem, then match the forms</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="quiz"><span class="lvl">Aa</span><span><h3>Quick quiz</h3><span class="small muted">Pick the right meaning, both directions</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="listen"><span class="lvl">♪</span><span><h3>Ear training</h3><span class="small muted">Hear Spanish, choose what it means</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="write"><span class="lvl">✎</span><span><h3>Write it</h3><span class="small muted">See English, type the Spanish</span></span><span class="small muted">›</span></button>
@@ -973,6 +989,121 @@ const COACH = {
   testTarget: "Hablo, hablas, habla, hablamos, hablan.",
   claudePrompt: "Be my Spanish teacher in voice mode. Teach me Spanish verb patterns one small step at a time, starting with the present tense of -ar, -er and -ir verbs. Explain each pattern, say examples slowly with their English meanings, then quiz me and correct my answers. Use Latin American Spanish and keep each turn short."
 };
+
+/* ================= ROOT BUILDER ================= */
+// Each form split into parts: stem as plain text, {ending}, [irregular change]. Checked against VERBS on load.
+const ROUTES = {
+  hablar: { present: ["habl{o}", "habl{as}", "habl{a}", "habl{amos}", "habl{an}"], past: ["habl{é}", "habl{aste}", "habl{ó}", "habl{amos}", "habl{aron}"] },
+  comer:  { present: ["com{o}", "com{es}", "com{e}", "com{emos}", "com{en}"], past: ["com{í}", "com{iste}", "com{ió}", "com{imos}", "com{ieron}"] },
+  vivir:  { present: ["viv{o}", "viv{es}", "viv{e}", "viv{imos}", "viv{en}"], past: ["viv{í}", "viv{iste}", "viv{ió}", "viv{imos}", "viv{ieron}"] },
+  ser:    { present: ["[soy]", "[eres]", "[es]", "[somos]", "[son]"], past: ["[fu]{i}", "[fu]{iste}", "[fu]{e}", "[fu]{imos}", "[fu]{eron}"] },
+  estar:  { present: ["est{oy}", "est{ás}", "est{á}", "est{amos}", "est{án}"], past: ["est[uv]{e}", "est[uv]{iste}", "est[uv]{o}", "est[uv]{imos}", "est[uv]{ieron}"] },
+  tener:  { present: ["ten[g]{o}", "t[ie]n{es}", "t[ie]n{e}", "ten{emos}", "t[ie]n{en}"], past: ["[tuv]{e}", "[tuv]{iste}", "[tuv]{o}", "[tuv]{imos}", "[tuv]{ieron}"] },
+  ir:     { present: ["[v]{oy}", "[v]{as}", "[v]{a}", "[v]{amos}", "[v]{an}"], past: ["[fu]{i}", "[fu]{iste}", "[fu]{e}", "[fu]{imos}", "[fu]{eron}"] },
+  hacer:  { present: ["ha[g]{o}", "hac{es}", "hac{e}", "hac{emos}", "hac{en}"], past: ["[hic]{e}", "[hic]{iste}", "[hiz]{o}", "[hic]{imos}", "[hic]{ieron}"] },
+  poder:  { present: ["p[ue]d{o}", "p[ue]d{es}", "p[ue]d{e}", "pod{emos}", "p[ue]d{en}"], past: ["[pud]{e}", "[pud]{iste}", "[pud]{o}", "[pud]{imos}", "[pud]{ieron}"] },
+  querer: { present: ["qu[ie]r{o}", "qu[ie]r{es}", "qu[ie]r{e}", "quer{emos}", "qu[ie]r{en}"], past: ["[quis]{e}", "[quis]{iste}", "[quis]{o}", "[quis]{imos}", "[quis]{ieron}"] },
+  decir:  { present: ["[dig]{o}", "d[i]c{es}", "d[i]c{e}", "dec{imos}", "d[i]c{en}"], past: ["[dij]{e}", "[dij]{iste}", "[dij]{o}", "[dij]{imos}", "[dij]{eron}"] },
+  venir:  { present: ["ven[g]{o}", "v[ie]n{es}", "v[ie]n{e}", "ven{imos}", "v[ie]n{en}"], past: ["[vin]{e}", "[vin]{iste}", "[vin]{o}", "[vin]{imos}", "[vin]{ieron}"] },
+  saber:  { present: ["[sé]", "sab{es}", "sab{e}", "sab{emos}", "sab{en}"], past: ["[sup]{e}", "[sup]{iste}", "[sup]{o}", "[sup]{imos}", "[sup]{ieron}"] }
+};
+Object.entries(ROUTES).forEach(([v, r]) => ["present", "past"].forEach(t => r[t].forEach((f, i) => { if (f.replace(/[[\]{}]/g, "") !== VERBS[v][t][i]) console.error("Route doesn't match verb form:", v, t, f); })));
+// English cues: [base, he/she form, past] or full per-person lists for "to be".
+const ROUTE_EN = {
+  hablar: ["speak", "speaks", "spoke"], comer: ["eat", "eats", "ate"], vivir: ["live", "lives", "lived"], tener: ["have", "has", "had"],
+  ir: ["go", "goes", "went"], hacer: ["do", "does", "did"], poder: ["can", "can", "could"], querer: ["want", "wants", "wanted"],
+  decir: ["say", "says", "said"], venir: ["come", "comes", "came"], saber: ["know", "knows", "knew"],
+  ser: { present: ["am", "are", "is", "are", "are"], past: ["was", "were", "was", "were", "were"] }
+};
+ROUTE_EN.estar = ROUTE_EN.ser;
+const ROUTE_WHO = ["I", "you", "he / she", "we", "they"];
+function routeCue(v, tense, i) {
+  const e = ROUTE_EN[v];
+  const w = Array.isArray(e) ? (tense === "past" ? e[2] : i === 2 ? e[1] : e[0]) : e[tense][i];
+  return `${ROUTE_WHO[i]} ${w}`;
+}
+const ROUTE_HOW = {
+  hablar: { present: "-ar verbs: drop -ar to get the stem habl-, then add o, as, a, amos, an.", past: "-ar past: stem + é, aste, ó, amos, aron. Watch the accents: hablé (I spoke) vs. hablo (I speak). Nosotros is the same in both: hablamos." },
+  comer: { present: "-er verbs: drop -er to get the stem com-, then add o, es, e, emos, en.", past: "-er past: stem + í, iste, ió, imos, ieron." },
+  vivir: { present: "-ir verbs: like -er, except nosotros ends in -imos: vivo, vives, vive, vivimos, viven.", past: "-ir past: the same endings as -er: viví, viviste, vivió, vivimos, vivieron." },
+  ser: { present: "Ser is irregular in the present. Memorize all five: soy, eres, es, somos, son.", past: "Ser's past uses the stem fu-: fui, fuiste, fue, fuimos, fueron. Ir has exactly the same past, so context tells you which one it is." },
+  estar: { present: "Regular -ar endings on est-, except yo is estoy. The stressed endings carry accents: estás, está, están.", past: "Past uses the irregular stem estuv- with the endings e, iste, o, imos, ieron (no accents)." },
+  tener: { present: "Yo adds a g: tengo. When the stress falls on the stem, e becomes ie: tienes, tiene, tienen. Nosotros keeps ten-: tenemos.", past: "Past uses the irregular stem tuv- with e, iste, o, imos, ieron." },
+  ir: { present: "Ir uses just v- plus -ar style endings: voy, vas, va, vamos, van. Voy a + verb is the easy future: voy a comer.", past: "Ir's past is the same as ser's: fui, fuiste, fue, fuimos, fueron." },
+  hacer: { present: "Only yo is odd: hago (the c becomes g). The rest are regular -er: haces, hace, hacemos, hacen.", past: "Past stem hic- with e, iste, o, imos, ieron. Before o the c becomes z to keep the sound: hizo." },
+  poder: { present: "When the stress falls on the stem, o becomes ue: puedo, puedes, puede, pueden. Nosotros keeps pod-: podemos.", past: "Past stem pud- with e, iste, o, imos, ieron." },
+  querer: { present: "When the stress falls on the stem, e becomes ie: quiero, quieres, quiere, quieren. Nosotros keeps quer-: queremos.", past: "Past stem quis- with e, iste, o, imos, ieron." },
+  decir: { present: "Yo is digo. Elsewhere e becomes i when stressed: dices, dice, dicen. Nosotros keeps dec-: decimos.", past: "Past stem dij-. Because the stem ends in j, ellos drops the i: dijeron." },
+  venir: { present: "Yo adds a g: vengo. e becomes ie when stressed: vienes, viene, vienen. Nosotros keeps ven-: venimos.", past: "Past stem vin- with e, iste, o, imos, ieron." },
+  saber: { present: "Only yo is odd: sé. Everything else is regular -er on sab-.", past: "Past stem sup- with e, iste, o, imos, ieron." }
+};
+function routeHTML(str) {
+  const out = [];
+  str.replace(/\[([^\]]+)\]|\{([^}]+)\}|([^[{]+)/g, (m, a, c, t) => { out.push(a ? ["change", a] : c ? ["end", c] : ["root", t]); return m; });
+  return out.map(([k, t]) => `<span class="rp-${k}">${esc(t)}</span>`).join("");
+}
+const ROUTE_LEGEND = `<p class="small muted route-legend"><span class="rp-end">ending</span> · <span class="rp-change">irregular change</span> · plain = the stem</p>`;
+function newRoundFor(v, tense) {
+  const forms = VERBS[v][tense], other = VERBS[v][tense === "present" ? "past" : "present"];
+  // Distractors: the same person in the other tense (hablo vs. hablé), so the learner has to read the ending.
+  const extra = [...new Set(other)].filter(f => !forms.includes(f)).slice(0, 3);
+  return { v, tense, slots: [null, null, null, null, null], active: 0, done: false, wrong: null, pool: shuffle([...forms, ...extra].map((t, i) => ({ t, id: i, used: false }))) };
+}
+function viewRoots(el) {
+  const names = Object.keys(VERBS);
+  if (!sub.round) sub.round = newRoundFor(sub.v || names[Math.floor(Math.random() * names.length)], "present");
+  if (!sub.mode) sub.mode = "match";
+  const R = sub.round, v = R.v, tense = R.tense, d = VERBS[v];
+  const stem = v.length > 2 ? v.slice(0, -2) : v, ending = v.length > 2 ? v.slice(-2) : "";
+  const route = `
+    <div class="card route" style="display:grid;gap:12px">
+      ${PERSONS.map((p, i) => `<div class="route-step"><span class="eyebrow">${p}</span>
+        <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="route-form">${routeHTML(ROUTES[v][tense][i])}</div>${speakBtn(d[tense][i])}</div>
+        <span class="small muted">“${esc(routeCue(v, tense, i))}”</span></div>`).join("")}
+      ${ROUTE_LEGEND}
+      <p class="small">${esc(ROUTE_HOW[v][tense])}</p>
+    </div>`;
+  let body;
+  if (sub.mode === "route") body = route;
+  else {
+    body = `
+      <p class="small muted">Tap a row, then tap the form that fits it.</p>
+      <div class="slots">${PERSONS.map((p, i) => {
+        const f = R.slots[i];
+        return `<button class="slot${f ? " filled" : ""}${!f && R.active === i ? " active" : ""}" data-slot="${i}" ${f ? "disabled" : ""}>
+          <span class="slot-label"><span class="eyebrow">${p}</span><span class="small">“${esc(routeCue(v, tense, i))}”</span></span>
+          <span class="slot-form">${f ? routeHTML(ROUTES[v][tense][i]) : "?"}</span></button>`;
+      }).join("")}</div>
+      ${R.done ? "" : `<div class="pool">${R.pool.map(c => `<button class="chip pool-chip${R.wrong === c.id ? " wrong" : ""}" data-chip="${c.id}" ${c.used ? "hidden" : ""}>${esc(c.t)}</button>`).join("")}</div>`}
+      ${R.wrong !== null ? `<div class="feedback no">Not that one for “${esc(routeCue(v, tense, R.active))}”. Look at the ending and try again.</div>` : ""}
+      ${R.done ? `<div class="feedback ok">¡Muy bien! Here's how each form is built from <b>${esc(stem)}-</b>.</div>${route}` : ""}`;
+  }
+  el.innerHTML = `
+    <button class="back" id="back">‹ Practice</button>
+    <div><span class="eyebrow">Raíces · stems</span><h1>Root builder</h1></div>
+    <div class="chips">${names.map(n => `<button class="chip" data-verb="${n}" aria-pressed="${n === v}">${n}</button>`).join("")}</div>
+    <div class="card root-card"><span class="eyebrow">Stem</span><div class="root-word">${esc(stem)}<span class="muted">${ending ? "-" + esc(ending) : ""}</span></div>
+      <span class="muted">${esc(d.en)}</span></div>
+    <div class="chips">
+      <button class="chip" data-tense="present" aria-pressed="${tense === "present"}">Present</button><button class="chip" data-tense="past" aria-pressed="${tense === "past"}">Past</button></div>
+    <div class="chips"><button class="chip" data-mode="match" aria-pressed="${sub.mode === "match"}">Match the forms</button><button class="chip" data-mode="route" aria-pressed="${sub.mode === "route"}">See the route</button></div>
+    ${body}
+    <button class="btn block ${R.done || sub.mode === "route" ? "" : "ghost"}" id="nextVerb">Next verb</button>`;
+  $("#back", el).onclick = () => { sub = null; render(); };
+  el.querySelectorAll("[data-verb]").forEach(b => b.onclick = () => { sub.round = newRoundFor(b.dataset.verb, tense); render(); });
+  el.querySelectorAll("[data-tense]").forEach(b => b.onclick = () => { sub.round = newRoundFor(v, b.dataset.tense); render(); });
+  el.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { sub.mode = b.dataset.mode; render(); });
+  $("#nextVerb", el).onclick = () => { const others = names.filter(n => n !== v); sub.round = newRoundFor(others[Math.floor(Math.random() * others.length)], tense); sub.mode = "match"; render(); window.scrollTo(0, 0); };
+  el.querySelectorAll("[data-slot]").forEach(b => b.onclick = () => { R.active = +b.dataset.slot; R.wrong = null; render(); });
+  el.querySelectorAll("[data-chip]").forEach(b => b.onclick = () => {
+    const c = R.pool.find(x => x.id === +b.dataset.chip);
+    if (c.t !== d[tense][R.active]) { R.wrong = c.id; render(); return; }
+    c.used = true; R.slots[R.active] = c.t; R.wrong = null; addXP(1); say(c.t);
+    const next = R.slots.findIndex(x => !x);
+    if (next === -1) { R.done = true; addXP(3); } else R.active = next;
+    render();
+  });
+}
 
 /* ================= VERB COACH (AI teacher, spoken) ================= */
 let vpref = {};
