@@ -176,6 +176,8 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .msg .tr { font-size: 0.88rem; color: var(--muted); font-style: italic; }
 .msg .fix { font-size: 0.88rem; background: var(--sun-soft); border-radius: 8px; padding: 6px 8px; }
 .composer { display: flex; gap: 8px; }
+.hear { display: block; font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+.hear a { font-weight: 700; }
 .seg-t { font-weight: 700; color: var(--accent); }
 .seg.now { background: var(--sun-soft); border-radius: 4px; box-shadow: 0 0 0 2px var(--sun-soft); }
 details summary { cursor: pointer; }
@@ -534,6 +536,25 @@ const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[¿?¡!.,'’-]/g, "").replace(/\s+/g, " ").trim();
+
+/* Native audio lives on other sites the page can't load audio from, so we link out to it. */
+const EXT = 'target="_blank" rel="noopener"';
+const ITALKI = "https://www.italki.com/en/teachers/filipino%28tagalog%29", PREPLY = "https://preply.com/en/online/tagalog-tutors";
+function cleanTl(t) { return String(t).split(" / ")[0].replace(/[…!?¿¡.,«»—]/g, "").replace(/\s+/g, " ").trim(); }
+function forvoUrl(w) { return "https://forvo.com/word/" + encodeURIComponent(w.toLowerCase()) + "/#tl"; }
+function gtUrl(t) { return "https://translate.google.com/?sl=tl&tl=en&op=translate&text=" + encodeURIComponent(t); }
+function hearLinks(text) {
+  const t = cleanTl(text), single = !t.includes(" ");
+  return `<span class="hear">Hear it: ${single ? `<a ${EXT} href="${forvoUrl(t)}">Forvo</a> · <a ${EXT} href="https://www.tagalog.com/dictionary/${encodeURIComponent(t.toLowerCase())}">Tagalog.com</a> · ` : ""}<a ${EXT} href="${gtUrl(t)}">Google Translate</a></span>`;
+}
+function formLinks(v) {
+  return `<span class="hear">Hear each form on Forvo: ${[...new Set(VERBS[v].forms)].map(f => `<a ${EXT} href="${forvoUrl(f)}">${f}</a>`).join(" · ")}</span>`;
+}
+function hearCard() {
+  return `<div class="card" style="display:grid;gap:8px"><h3>Hear real Filipino voices</h3>
+    <p class="small">Every phrase has <b>Hear it</b> links. <b>Forvo</b> has recordings by native speakers, best for single words. <b>Tagalog.com</b> dictionary entries include audio. <b>Google Translate</b> reads whole phrases and stories with a voice built for Filipino; it's computer-generated but sounds natural. They open in your browser.</p>
+    <p class="small">For real conversation, a Filipino tutor is the best teacher: <a ${EXT} href="${ITALKI}">italki</a> · <a ${EXT} href="${PREPLY}">Preply</a></p></div>`;
+}
 const SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
 function speakBtn(text) { return !voice ? "" : `<button class="speak" data-say="${esc(text)}" aria-label="Listen: ${esc(text)}">${SPK}</button>`; }
 function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); }
@@ -646,7 +667,7 @@ function viewHome(el) {
       <label for="goalSel" class="small">Daily goal</label>
       <select id="goalSel" style="width:auto">${[15, 30, 50, 80].map(g => `<option value="${g}" ${g === S.goal ? "selected" : ""}>${g} pts · ${{ 15: "casual", 30: "regular", 50: "serious", 80: "intense" }[g]}</option>`).join("")}</select>
     </div>
-    ${sourcesCard()}${voiceNote()}<p class="small muted">${progressDoc ? "Progress is saved to your account." : "Progress is saved on this device."} Points: 1 per card, 2 per right answer, 10 per story, 3 per chat message.</p>`;
+    ${hearCard()}${sourcesCard()}${voiceNote()}<p class="small muted">${progressDoc ? "Progress is saved to your account." : "Progress is saved on this device."} Points: 1 per card, 2 per right answer, 10 per story, 3 per chat message.</p>`;
   $("#startToday", el).onclick = () => { sub = { type: "study", deck: "all" }; go("cards"); };
   el.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { sub = b.dataset.mode ? { type: b.dataset.mode } : null; go(b.dataset.go); });
   $("#goalSel", el).onchange = e => { S.goal = +e.target.value; save(); render(); };
@@ -679,7 +700,7 @@ function viewCards(el) {
     const nq = norm(q || "");
     const rows = decks.flatMap(d => d.cards.map(c => ({ c, d }))).filter(({ c }) => !nq || norm(c[0]).includes(nq) || norm(c[1]).includes(nq));
     const shown = nq ? rows.slice(0, 60) : rows.filter(r => r.d.id === "survival");
-    listEl.innerHTML = shown.length ? shown.map(({ c }) => `<div class="phrase"><div class="txt"><b>${esc(c[0])}</b><span>${esc(c[1])}</span>${c[3] ? `<span class="small" style="display:block">Source: ${srcLink(c[3])}</span>` : ""}</div>${speakBtn(c[0])}</div>`).join("") + (nq ? "" : `<p class="small muted" style="padding:10px 0">Showing survival basics. Search to find any phrase.</p>`)
+    listEl.innerHTML = shown.length ? shown.map(({ c }) => `<div class="phrase"><div class="txt"><b>${esc(c[0])}</b><span>${esc(c[1])}</span>${c[3] ? `<span class="small" style="display:block">Source: ${srcLink(c[3])}</span>` : ""}${hearLinks(c[0])}</div>${speakBtn(c[0])}</div>`).join("") + (nq ? "" : `<p class="small muted" style="padding:10px 0">Showing survival basics. Search to find any phrase.</p>`)
       : `<p class="muted" style="padding:12px 0">No phrase matches “${esc(q)}”.</p>`;
   };
   $("#pbSearch", el).oninput = e => drawPB(e.target.value);
@@ -696,7 +717,7 @@ function viewBrowse(el) {
     <div class="card" style="padding-block:4px">${d.cards.map(c => {
       const s = cardState(c[0]);
       const tag = !s ? "new" : s.iv >= 21 ? "strong" : s.iv >= 3 ? "learning" : "fresh";
-      return `<div class="phrase"><div class="txt"><b>${esc(c[0])}</b><span>${esc(c[1])}${c[2] ? " · " + esc(c[2]) : ""}</span>${c[3] ? `<span class="small" style="display:block">Source: ${srcLink(c[3])}</span>` : ""}</div><span class="small muted">${tag}</span>${speakBtn(c[0])}</div>`;
+      return `<div class="phrase"><div class="txt"><b>${esc(c[0])}</b><span>${esc(c[1])}${c[2] ? " · " + esc(c[2]) : ""}</span>${c[3] ? `<span class="small" style="display:block">Source: ${srcLink(c[3])}</span>` : ""}${hearLinks(c[0])}</div><span class="small muted">${tag}</span>${speakBtn(c[0])}</div>`;
     }).join("")}</div>`;
   $("#back", el).onclick = () => { sub = null; render(); };
   $("#study", el).onclick = () => { sub = { type: "study", deck: d.id }; render(); };
@@ -755,7 +776,7 @@ function viewStudy(el) {
         <div class="face"><span class="eyebrow">${S.dir === "es-en" ? "Tagalog" : "English"}</span><div class="term">${esc(front)}</div>
           ${S.dir === "es-en" ? speakBtn(c[0]) : ""}<span class="small muted">Tap to flip</span></div>
         <div class="face rear"><span class="eyebrow">${S.dir === "es-en" ? "English" : "Tagalog"}</span><div class="term">${esc(back)}</div>
-          ${speakBtn(c[0])}${c[2] ? `<div class="note">${esc(c[2])}</div>` : ""}${c[3] ? `<div class="note small">Source: ${srcLink(c[3])}</div>` : ""}</div>
+          ${speakBtn(c[0])}${c[2] ? `<div class="note">${esc(c[2])}</div>` : ""}${c[3] ? `<div class="note small">Source: ${srcLink(c[3])}</div>` : ""}<div class="note small">${hearLinks(c[0])}</div></div>
       </div>
     </div>
     <div class="rate" id="rate" hidden>
@@ -798,7 +819,7 @@ function viewStory(el) {
   el.innerHTML = `
     <button class="back" id="back">‹ All stories</button>
     <div><span class="eyebrow">Level ${s.level}</span><h1>${esc(s.title)}</h1><p class="muted">${esc(s.en)}</p></div>
-    <div class="row">${voice ? `<button class="btn" id="play">▶ Listen to the story</button>` : ""}<button class="btn ghost" id="toggleAll">${allShown ? "Hide English" : "Show all English"}</button></div>
+    <div class="row">${voice ? `<button class="btn" id="play">▶ Listen to the story</button>` : ""}<button class="btn ghost" id="toggleAll">${allShown ? "Hide English" : "Show all English"}</button><a class="btn ghost" style="text-decoration:none;display:inline-flex;align-items:center" ${EXT} href="${gtUrl(s.lines.map(l => l[0].replace(/[—«»]/g, "")).join(" "))}">Hear it on Google Translate</a></div>
     <div class="card" style="padding:6px">${s.lines.map((l, i) => `<button class="sent" data-i="${i}">${esc(l[0])}${sub.show[i] ? `<span class="en">${esc(l[1])}</span>` : ""}</button>`).join("")}</div>
     <div class="card gloss"><div class="row between"><h3>Key words</h3><span class="small muted">Add to your flashcards</span></div>
       ${s.gloss.map((g, i) => {
@@ -974,7 +995,7 @@ function viewVerbs(el) {
   const table = (v, hi) => `<table class="conj">${ASPECTS.map((a, i) => `<tr><td>${a}</td><td>${i === hi ? `<b>${VERBS[v].forms[i]}</b>` : VERBS[v].forms[i]} <span class="muted small">${esc(VERBS[v].en[i])}</span></td></tr>`).join("")}</table>`;
   if (sub.mode === "table") {
     el.innerHTML = head + names.map(v => `<div class="card"><div class="row between"><h3>${v} <span class="muted small" style="font-weight:400">${esc(VERBS[v].en[0])} · root ${VERBS[v].root} · ${VERBS[v].group}</span></h3>${speakBtn(VERBS[v].forms.join(", "))}</div>
-      ${table(v, -1)}${VERBS[v].note ? `<p class="small muted" style="margin-top:8px">${esc(VERBS[v].note)}</p>` : ""}<p class="small muted" style="margin-top:6px">Source: ${srcLink(VERBS[v].src)}</p></div>`).join("");
+      ${table(v, -1)}${VERBS[v].note ? `<p class="small muted" style="margin-top:8px">${esc(VERBS[v].note)}</p>` : ""}<p class="small muted" style="margin-top:6px">Source: ${srcLink(VERBS[v].src)}</p>${formLinks(v)}</div>`).join("");
   } else {
     if (!sub.q) { sub.q = { v: names[Math.floor(Math.random() * names.length)], a: 1 + Math.floor(Math.random() * 3) }; sub.result = null; }
     const { v, a } = sub.q, ans = VERBS[v].forms[a];
@@ -986,7 +1007,7 @@ function viewVerbs(el) {
         ${sub.result ? "" : `<button class="btn" type="submit">Check</button>`}
       </form>
       ${sub.result ? `<div class="feedback ${sub.result === "wrong" ? "no" : "ok"}">${sub.result === "exact" ? "Tama!" : sub.result === "accent" ? "Right! Exact spelling:" : "The answer is"} ${ans}</div>
-        <div class="card">${table(v, a)}${VERBS[v].note ? `<p class="small muted" style="margin-top:8px">${esc(VERBS[v].note)}</p>` : ""}<p class="small muted" style="margin-top:6px">Source: ${srcLink(VERBS[v].src)}</p></div>
+        <div class="card">${table(v, a)}${VERBS[v].note ? `<p class="small muted" style="margin-top:8px">${esc(VERBS[v].note)}</p>` : ""}<p class="small muted" style="margin-top:6px">Source: ${srcLink(VERBS[v].src)}</p>${formLinks(v)}</div>
         <button class="btn block" id="next">Next verb</button>` : ""}`;
     const inp = $("#vIn", el); if (sub.result) inp.value = sub.given || ""; else inp.focus();
     $("#vf", el).onsubmit = e => {
@@ -1065,6 +1086,10 @@ function speakSegments(segs, onSeg, onDone) {
 }
 
 const coach = { topic: null, log: [], busy: false, err: null, draft: "" };
+function coachHear(segs) {
+  const tl = [...new Set(segs.filter(s => s.lang !== "en").map(s => cleanTl(s.text)).filter(Boolean))];
+  return tl.length ? `<span class="hear">Hear the Tagalog: ${tl.map(t => `<a ${EXT} href="${t.includes(" ") ? gtUrl(t) : forvoUrl(t)}">${esc(t)}</a>`).join(" · ")}</span>` : "";
+}
 function segHTML(segs, mi) {
   return segs.map((s, i) => `<span class="seg${s.lang === "en" ? "" : " seg-t"}" data-m="${mi}" data-seg="${i}">${esc(s.text)}</span>`).join(" ");
 }
@@ -1156,7 +1181,7 @@ function viewCoach(el) {
     <div class="row between"><button class="back" id="back">‹ Topics</button><span class="small muted">AI-generated lesson</span></div>
     <div><span class="eyebrow">Verb coach · ${esc(S.level || "A1 beginner")}</span><h2>${esc(coach.topic[0])}</h2></div>
     <div class="chat">${coach.log.map((m, i) => m.role === "coach"
-      ? `<div class="msg bot"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:8px"><span style="flex:1;min-width:0">${segHTML(m.segs, i)}</span><button class="speak" data-play="${i}" aria-label="Play again">${SPK}</button></div></div>`
+      ? `<div class="msg bot"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:8px"><span style="flex:1;min-width:0">${segHTML(m.segs, i)}</span><button class="speak" data-play="${i}" aria-label="Play again">${SPK}</button></div>${coachHear(m.segs)}</div>`
       : `<div class="msg me">${esc(m.text)}</div>`).join("")}
       ${coach.busy ? `<div class="msg bot"><span class="muted">Thinking…</span></div>` : ""}
       ${coach.err ? `<div class="feedback no">${esc(coach.err)}</div>` : ""}
@@ -1184,6 +1209,7 @@ function viewTalk(el) {
     el.innerHTML = `
       <h1>Usap</h1>
       <p class="muted">Role-play real situations with an AI partner. Its replies are AI-generated, not checked against a source. It answers in simple Tagalog, gives you the English, and gently corrects your mistakes.</p>
+      <div class="tip"><span class="eyebrow">Want a real person?</span><span>Practice the same situations with a Filipino tutor: <a ${EXT} href="${ITALKI}">italki</a> · <a ${EXT} href="${PREPLY}">Preply</a></span></div>
       <div class="card row between"><label for="lvl" class="small">Your level</label>
         <select id="lvl" style="width:auto">${["A1 beginner", "A2 elementary", "B1 intermediate"].map(l => `<option ${S.level === l ? "selected" : ""}>${l}</option>`).join("")}</select></div>
       <div class="story-list">${SCENARIOS.map(s => `<button class="story-item" data-sc="${s.id}"><span class="lvl">${{ sari: "🏪", jeep: "🛺", karinderya: "🍲", lola: "👵", doctor: "🩺", free: "💬" }[s.id]}</span>
