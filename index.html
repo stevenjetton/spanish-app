@@ -177,6 +177,9 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .msg .tr { font-size: 0.88rem; color: var(--muted); font-style: italic; }
 .msg .fix { font-size: 0.88rem; background: var(--sun-soft); border-radius: 8px; padding: 6px 8px; }
 .composer { display: flex; gap: 8px; }
+.seg-t { font-weight: 700; color: var(--accent); }
+.seg.now { background: var(--sun-soft); border-radius: 4px; box-shadow: 0 0 0 2px var(--sun-soft); }
+details summary { cursor: pointer; }
 .composer input { flex: 1; min-width: 0; }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; z-index: 20; max-width: calc(100% - 32px); }
@@ -524,7 +527,7 @@ function addMine(es, en) {
 let tab = "home";
 function go(t) {
   tab = t;
-  try { speechSynthesis.cancel(); } catch (e) {}
+  stopSpeaking();
   document.querySelectorAll("nav.tabs button").forEach(b => { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   render();
   window.scrollTo(0, 0);
@@ -571,7 +574,7 @@ function viewHome(el) {
       <button class="action" data-go="stories"><span class="eyebrow">Read</span><b>Short stories</b><span class="small muted">${S.storiesDone.length} of ${STORIES.length} finished</span></button>
       <button class="action" data-go="talk"><span class="eyebrow">Speak</span><b>Role-play chat</b><span class="small muted">Café, hotel, doctor…</span></button>
       <button class="action" data-go="practice" data-mode="listen"><span class="eyebrow">Listen</span><b>Ear training</b><span class="small muted">Hear it, pick the meaning</span></button>
-      <button class="action" data-go="practice" data-mode="verbs"><span class="eyebrow">Grammar</span><b>Verb drill</b><span class="small muted">13 verbs that matter most</span></button>
+      <button class="action" data-go="practice" data-mode="coach"><span class="eyebrow">AI · Voice</span><b>Verb coach</b><span class="small muted">Learn verb patterns by ear</span></button>
     </div>
     <div class="card">
       <div class="row between" style="margin-bottom:10px"><h3>This week</h3><span class="small muted">${totalLearned} phrases learned · 🔥 ${streakNow()} day streak</span></div>
@@ -783,10 +786,12 @@ function viewPractice(el) {
   if (sub && sub.type === "listen") return viewQuiz(el, true);
   if (sub && sub.type === "verbs") return viewVerbs(el);
   if (sub && sub.type === "write") return viewWrite(el);
+  if (sub && sub.type === "coach") return viewCoach(el);
   el.innerHTML = `
     <h1>Práctica</h1>
     <p class="muted">Short drills. Each round is 10 questions.</p>
     <div class="story-list">
+      <button class="story-item" data-m="coach"><span class="lvl">AI</span><span><h3>Verb coach</h3><span class="small muted">An AI teacher explains verb patterns out loud</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="quiz"><span class="lvl">Aa</span><span><h3>Quick quiz</h3><span class="small muted">Pick the right meaning, both directions</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="listen"><span class="lvl">♪</span><span><h3>Ear training</h3><span class="small muted">Hear Spanish, choose what it means</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="write"><span class="lvl">✎</span><span><h3>Write it</h3><span class="small muted">See English, type the Spanish</span></span><span class="small muted">›</span></button>
@@ -945,6 +950,180 @@ function viewVerbs(el) {
   $("#back", el).onclick = back;
   el.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { sub.tense = b.dataset.t; sub.q = null; render(); });
   $("[data-v]", el).onclick = () => { sub.mode = sub.mode === "table" ? "drill" : "table"; render(); };
+}
+
+const COACH = {
+  key: "hablaya", code: "es", langName: "Spanish",
+  voiceTest: l => /^es/i.test(l),
+  topics: [
+    ["The -ar, -er, -ir endings", "Present tense of regular verbs: how hablar, comer and vivir change for each person."],
+    ["Special 'yo' forms", "Verbs whose yo form breaks the pattern: tengo, hago, digo, vengo, sé, soy, estoy, voy."],
+    ["Stem-changing verbs", "Vowel changes in the present: quiero, puedo, tienes, vienes, dices. Nosotros keeps the original vowel."],
+    ["Ser vs. estar", "Two verbs for 'to be': which one to use, and their forms."],
+    ["Talking about the past", "Preterite of regular verbs: hablé, comí, viví and the endings behind them."],
+    ["Irregular past stems", "Past-tense stems to memorize: tuve, estuve, pude, quise, hice, dije, vine, supe, and fui for ser and ir."],
+    ["The easy future", "Ir a + verb: voy a comer, vamos a hablar."]
+  ],
+  rules: "Use Latin American Spanish: ustedes, never vosotros.",
+  strict: "Use these exact forms. For verbs not in this table, use only forms you are certain of.",
+  reference: () => Object.entries(VERBS).map(([v, d]) => `${v} (${d.en}): present ${d.present.join(", ")}; past ${d.past.join(", ")}`).join("\n") + "\nPerson order: yo, tú, él/ella/usted, nosotros, ellos/ustedes.",
+  voiceHelp: "For the most human sound on iPhone: Settings → Accessibility → Spoken Content → Voices → Spanish, and download a voice marked Enhanced or Premium (for example Mónica or Paulina). On Android, install Google's Spanish voices in Text-to-speech settings.",
+  noVoice: "This device has no Spanish voice yet, so only the English parts will be spoken.",
+  testEn: "Hi! I'm your verb coach. Here's how a Spanish verb sounds:",
+  testTarget: "Hablo, hablas, habla, hablamos, hablan.",
+  claudePrompt: "Be my Spanish teacher in voice mode. Teach me Spanish verb patterns one small step at a time, starting with the present tense of -ar, -er and -ir verbs. Explain each pattern, say examples slowly with their English meanings, then quiz me and correct my answers. Use Latin American Spanish and keep each turn short."
+};
+
+/* ================= VERB COACH (AI teacher, spoken) ================= */
+let vpref = {};
+try { vpref = JSON.parse(localStorage.getItem(COACH.key + ".voices") || "{}"); } catch (e) {}
+function saveVpref() { try { localStorage.setItem(COACH.key + ".voices", JSON.stringify(vpref)); } catch (e) {} }
+function allVoices() { try { return speechSynthesis.getVoices(); } catch (e) { return []; } }
+// Phones ship several voices per language; the "Enhanced"/"Premium"/neural ones sound far more human.
+function voiceScore(v) {
+  let s = 0;
+  if (/enhanced|premium|natural|neural/i.test(v.name)) s += 4;
+  if (/google|siri/i.test(v.name)) s += 2;
+  if (v.localService === false) s += 1;
+  return s + (COACH.voiceBonus ? COACH.voiceBonus(v) : 0);
+}
+function voicesFor(kind) { return allVoices().filter(v => kind === "en" ? /^en/i.test(v.lang || "") : COACH.voiceTest(v.lang || "")); }
+function coachVoice(kind) {
+  const vs = voicesFor(kind), pref = kind === "en" ? vpref.en : vpref.target;
+  return vs.find(v => v.name === pref) || vs.sort((a, b) => voiceScore(b) - voiceScore(a))[0] || null;
+}
+let coachRun = 0;
+function stopSpeaking() { coachRun++; try { speechSynthesis.cancel(); } catch (e) {} }
+function speakSegments(segs, onSeg, onDone) {
+  const run = ++coachRun;
+  try { speechSynthesis.cancel(); } catch (e) {}
+  let i = 0;
+  const next = () => {
+    if (run !== coachRun) return;
+    if (i >= segs.length) { onSeg(-1); if (onDone) onDone(); return; }
+    const sg = segs[i], en = sg.lang === "en", v = coachVoice(en ? "en" : "target");
+    onSeg(i);
+    if (!v) { i++; next(); return; }
+    try {
+      const u = new SpeechSynthesisUtterance(String(sg.text).replace(/[—«»…*_#]/g, " "));
+      u.voice = v; u.lang = v.lang; u.rate = (vpref.rate || 1) * (en ? 0.98 : 0.85);
+      u.onend = () => { i++; setTimeout(next, en ? 120 : 320); };
+      u.onerror = () => { i++; next(); };
+      speechSynthesis.speak(u);
+    } catch (e) { i++; next(); }
+  };
+  next();
+}
+
+const coach = { topic: null, log: [], busy: false, err: null, draft: "" };
+function segHTML(segs, mi) {
+  return segs.map((s, i) => `<span class="seg${s.lang === "en" ? "" : " seg-t"}" data-m="${mi}" data-seg="${i}">${esc(s.text)}</span>`).join(" ");
+}
+function playCoach(mi) {
+  const m = coach.log[mi]; if (!m || m.role !== "coach") return;
+  speakSegments(m.segs, i => {
+    document.querySelectorAll(".seg.now").forEach(x => x.classList.remove("now"));
+    const sp = document.querySelector(`.seg[data-m="${mi}"][data-seg="${i}"]`); if (sp) sp.classList.add("now");
+  });
+}
+async function coachTurn(userText) {
+  coach.busy = true; coach.err = null; render();
+  const sample = await getSample();
+  if (!sample) { coach.busy = false; coach.err = "The coach needs the Claude app or claude.ai, signed in."; render(); return; }
+  const transcript = coach.log.map(m => m.role === "coach" ? "Teacher: " + m.segs.map(s => s.text).join(" ") : "Learner: " + m.text).join("\n");
+  const prompt = `You are a warm, expert ${COACH.langName} teacher giving a spoken lesson to an English speaker, entirely about verb patterns.
+Lesson topic: ${coach.topic[0]}. ${coach.topic[1]}
+Learner level: ${S.level || "A1 beginner"}.
+This lesson is VOICE-FIRST: every word is read aloud by text-to-speech. Talk the way a teacher talks: short, friendly sentences; no lists, tables, symbols, slashes or markdown.
+Teach one small step per turn: name the pattern, give one or two examples, and always give the English meaning of each example. Then ask the learner ONE quick question to answer out loud (for example, "How would you say 'we eat'?").
+When the learner answers, say clearly whether it is right, give the correct form, explain the pattern behind it in one sentence, then move to the next step. Reuse the pattern on new verbs so the learner feels it working. If the learner says they don't know, teach it again more simply.
+${COACH.rules}
+Reference forms. ${COACH.strict}
+${COACH.reference()}
+Return ONLY JSON: {"segments":[{"lang":"en","text":"..."},{"lang":"${COACH.code}","text":"..."}]}
+Put every ${COACH.langName} word or phrase in its own "${COACH.code}" segment so a native ${COACH.langName} voice says it; English goes in "en" segments. Keep the whole turn under 70 words.
+
+Conversation so far:
+${transcript || "(none)"}
+Learner: ${userText}`;
+  try {
+    const r = await sample.json(prompt, { cache: false });
+    const segs = (r && Array.isArray(r.segments) ? r.segments : []).filter(s => s && s.text).map(s => ({ lang: s.lang === "en" ? "en" : COACH.code, text: String(s.text) }));
+    if (!segs.length) throw new Error("empty");
+    coach.log.push({ role: "coach", segs });
+    addXP(3);
+    coach.busy = false;
+    if (sub && sub.type === "coach") { render(); window.scrollTo(0, document.body.scrollHeight); playCoach(coach.log.length - 1); }
+    return;
+  } catch (err) {
+    if (userText !== "(Start the lesson.)") { coach.log.pop(); coach.draft = userText; }
+    coach.err = err && err.code === "not_granted" ? "The coach wasn't allowed. You can turn it on from this page's permissions." : err && err.code === "rate_limited" ? "Too many requests at once. Wait a minute and try again." : "Couldn't reach the coach. Check your connection and try again.";
+  }
+  coach.busy = false;
+  if (sub && sub.type === "coach") render();
+}
+function voiceOptions(kind) {
+  const vs = voicesFor(kind).sort((a, b) => voiceScore(b) - voiceScore(a)), cur = coachVoice(kind);
+  if (!vs.length) return `<option>None on this device</option>`;
+  return vs.map(v => `<option value="${esc(v.name)}" ${cur && cur.name === v.name ? "selected" : ""}>${esc(v.name)} (${esc(v.lang)})${/enhanced|premium|natural|neural/i.test(v.name) ? " ★" : ""}</option>`).join("");
+}
+function viewCoach(el) {
+  const back = () => { stopSpeaking(); sub = null; render(); };
+  if (!coach.topic) {
+    const tv = coachVoice("target");
+    el.innerHTML = `
+      <button class="back" id="back">‹ Practice</button>
+      <div><span class="eyebrow">AI mode</span><h1>Verb coach</h1></div>
+      <p class="muted">An AI teacher explains verb patterns out loud, step by step, with meanings. Then it asks you a question. Answer by typing, or tap the microphone on your phone's keyboard and say it.</p>
+      <div class="story-list">${COACH.topics.map((t, i) => `<button class="story-item" data-topic="${i}"><span class="lvl">${i + 1}</span><span><h3>${esc(t[0])}</h3><span class="small muted">${esc(t[1])}</span></span><span class="small muted">›</span></button>`).join("")}</div>
+      <div class="card" style="display:grid;gap:10px">
+        <h3>Voices</h3>
+        <label class="small" for="vTarget">${COACH.langName} voice</label><select id="vTarget">${voiceOptions("target")}</select>
+        <label class="small" for="vEn">English voice</label><select id="vEn">${voiceOptions("en")}</select>
+        <label class="small" for="vRate">Speed</label>
+        <select id="vRate">${[[0.8, "Slow"], [1, "Normal"], [1.15, "Fast"]].map(([r, l]) => `<option value="${r}" ${(vpref.rate || 1) === r ? "selected" : ""}>${l}</option>`).join("")}</select>
+        <button class="btn ghost" id="vTest">▶ Test voices</button>
+        <p class="small muted">★ marks the most natural-sounding voices. ${COACH.voiceHelp}${tv ? "" : " " + COACH.noVoice}</p>
+      </div>
+      <div class="tip"><span class="eyebrow">Want a full voice conversation?</span>
+        <span>In the Claude app, tap the voice button, then say or paste this. Claude listens and answers out loud with a natural voice.</span>
+        <span class="small" id="cPrompt" style="font-style:italic">${esc(COACH.claudePrompt)}</span>
+        <button class="btn ghost" id="cCopy">Copy prompt</button></div>`;
+    $("#back", el).onclick = back;
+    el.querySelectorAll("[data-topic]").forEach(b => b.onclick = () => { coach.topic = COACH.topics[+b.dataset.topic]; coach.log = []; coach.err = null; coachTurn("(Start the lesson.)"); });
+    $("#vTarget", el).onchange = e => { vpref.target = e.target.value; saveVpref(); };
+    $("#vEn", el).onchange = e => { vpref.en = e.target.value; saveVpref(); };
+    $("#vRate", el).onchange = e => { vpref.rate = +e.target.value; saveVpref(); };
+    $("#vTest", el).onclick = () => speakSegments([{ lang: "en", text: COACH.testEn }, { lang: COACH.code, text: COACH.testTarget }], () => {});
+    $("#cCopy", el).onclick = () => {
+      const done = () => toast("Prompt copied");
+      try { navigator.clipboard.writeText(COACH.claudePrompt).then(done, () => selectPrompt()); } catch (e) { selectPrompt(); }
+    };
+    const selectPrompt = () => { const r = document.createRange(); r.selectNodeContents($("#cPrompt")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Tap Copy."); };
+    return;
+  }
+  const last = coach.log.length - 1;
+  el.innerHTML = `
+    <div class="row between"><button class="back" id="back">‹ Topics</button><span class="small muted">AI-generated lesson</span></div>
+    <div><span class="eyebrow">Verb coach · ${esc(S.level || "A1 beginner")}</span><h2>${esc(coach.topic[0])}</h2></div>
+    <div class="chat">${coach.log.map((m, i) => m.role === "coach"
+      ? `<div class="msg bot"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:8px"><span style="flex:1;min-width:0">${segHTML(m.segs, i)}</span><button class="speak" data-play="${i}" aria-label="Play again">${SPK}</button></div></div>`
+      : `<div class="msg me">${esc(m.text)}</div>`).join("")}
+      ${coach.busy ? `<div class="msg bot"><span class="muted">Thinking…</span></div>` : ""}
+      ${coach.err ? `<div class="feedback no">${esc(coach.err)}</div>` : ""}
+    </div>
+    <div class="chips"><button class="chip" data-q="I don't know">I don't know</button><button class="chip" data-q="Please explain that again more simply.">Explain again</button><button class="chip" data-q="Got it. Next step, please.">Next step</button><button class="chip" id="stop">■ Stop voice</button></div>
+    <form class="composer" id="kf"><input type="text" id="kIn" autocomplete="off" enterkeyhint="send" placeholder="Answer, or tap 🎤 on your keyboard…" ${coach.busy ? "disabled" : ""}><button class="btn" type="submit" ${coach.busy ? "disabled" : ""}>Send</button></form>`;
+  $("#back", el).onclick = () => { stopSpeaking(); coach.topic = null; render(); };
+  el.querySelectorAll("[data-play]").forEach(b => b.onclick = () => playCoach(+b.dataset.play));
+  $("#stop", el).onclick = stopSpeaking;
+  const inp = $("#kIn", el);
+  inp.value = coach.draft || "";
+  inp.oninput = () => coach.draft = inp.value;
+  const send = t => { if (!t || coach.busy) return; stopSpeaking(); coach.log.push({ role: "me", text: t }); coach.draft = ""; coachTurn(t); };
+  el.querySelectorAll("[data-q]").forEach(b => b.onclick = () => send(b.dataset.q));
+  $("#kf", el).onsubmit = e => { e.preventDefault(); send(inp.value.trim()); };
+  if (last < 0 && !coach.busy && !coach.err) coachTurn("(Start the lesson.)");
 }
 
 /* ================= TALK (role-play with Claude) ================= */
