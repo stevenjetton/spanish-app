@@ -529,7 +529,7 @@ function go(t) {
   render();
   window.scrollTo(0, 0);
 }
-document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => go(b.dataset.tab)));
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => { sub = null; go(b.dataset.tab); }));
 let sub = null; // per-tab sub-view
 function render() {
   updatePills();

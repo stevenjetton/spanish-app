@@ -1,0 +1,1075 @@
+<title>Tara Usap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: one-column phone app, sticky top bar, fixed bottom tab bar; sea teal with mango highlights and a banig-weave mark */
+:root {
+  --bg: #f2f6f4;
+  --surface: #ffffff;
+  --surface-2: #e3ede9;
+  --fg: #13241f;
+  --muted: #55675f;
+  --line: #d0ded9;
+  --accent: #0e6e6a;      /* capiz-shell teal */
+  --accent-ink: #ffffff;
+  --accent-soft: #d3eeea;
+  --sun: #f4a81d;         /* carabao mango */
+  --sun-soft: #fdf0cf;
+  --good: #1f8a5b;
+  --good-soft: #d8f1e5;
+  --bad: #c0392b;
+  --bad-soft: #f9dcd8;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1614; --surface: #14211f; --surface-2: #1d2f2b; --fg: #e5f0ec; --muted: #91a8a1; --line: #29403b;
+    --accent: #5cc9bf; --accent-ink: #07201c; --accent-soft: #18403b; --sun: #f5c04a; --sun-soft: #3a3020;
+    --good: #4fcf94; --good-soft: #17352a; --bad: #ff8a7a; --bad-soft: #3d2020; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1614; --surface: #14211f; --surface-2: #1d2f2b; --fg: #e5f0ec; --muted: #91a8a1; --line: #29403b;
+  --accent: #5cc9bf; --accent-ink: #07201c; --accent-soft: #18403b; --sun: #f5c04a; --sun-soft: #3a3020;
+  --good: #4fcf94; --good-soft: #17352a; --bad: #ff8a7a; --bad-soft: #3d2020; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 17px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 calc(84px + env(safe-area-inset-bottom, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 640px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.08rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 2px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+.eyebrow { font-size: 0.74rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.muted { color: var(--muted); }
+.small { font-size: 0.88rem; }
+
+/* top bar */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+.tile { width: 26px; height: 26px; border-radius: 6px; background: repeating-linear-gradient(45deg, var(--accent) 0 5px, transparent 5px 10px), repeating-linear-gradient(-45deg, var(--sun) 0 5px, var(--accent-soft) 5px 10px); }
+.pills { display: flex; gap: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 0.85rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pill.sun { background: var(--sun-soft); border-color: transparent; }
+
+/* tab bar */
+nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+nav.tabs button { background: none; border: 0; display: grid; justify-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+nav.tabs button svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+nav.tabs button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+
+main section { display: grid; gap: 16px; padding-block: 6px 24px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.btn { border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 700; background: var(--accent); color: var(--accent-ink); min-height: 46px; }
+.btn.ghost { background: var(--surface-2); color: var(--fg); }
+.btn.sun { background: var(--sun); color: #2a1d00; }
+.btn.block { width: 100%; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px; font-size: 0.9rem; font-weight: 700; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.speak { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.speak svg { width: 20px; height: 20px; fill: currentColor; }
+
+/* home */
+.hero { background: var(--accent); color: var(--accent-ink); border-radius: 20px; padding: 20px; display: grid; gap: 14px; position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; right: -30px; top: -30px; width: 140px; height: 140px; opacity: 0.18;
+  background: radial-gradient(circle, var(--accent-ink) 0 14%, transparent 15%) 0 0 / 35px 35px; }
+.hero .big { font-family: var(--font-display); font-size: 1.55rem; font-weight: 800; line-height: 1.15; }
+.meter { height: 10px; border-radius: 99px; background: color-mix(in srgb, var(--accent-ink) 25%, transparent); overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--sun); border-radius: 99px; transition: width .4s; }
+.stat { display: grid; gap: 2px; }
+.stat b { font-family: var(--font-display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; font-size: 0.75rem; color: var(--muted); }
+.week i { display: block; height: 34px; border-radius: 8px; background: var(--surface-2); margin-bottom: 4px; position: relative; overflow: hidden; }
+.week i > s { position: absolute; left: 0; right: 0; bottom: 0; background: var(--accent); text-decoration: none; }
+.week .today { color: var(--fg); font-weight: 700; }
+.pod { display: grid; gap: 6px; }
+.pod .es { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; }
+.action { display: grid; gap: 4px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; }
+.action b { font-family: var(--font-display); font-size: 1.05rem; }
+
+/* flashcard */
+.deck { text-align: left; display: grid; gap: 6px; padding: 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.deck .count { font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.deck .bar { height: 6px; border-radius: 9px; background: var(--surface-2); overflow: hidden; }
+.deck .bar i { display: block; height: 100%; background: var(--good); }
+.flash { perspective: 1200px; min-height: 280px; }
+.flash .inner { position: relative; min-height: 280px; transition: transform .45s; transform-style: preserve-3d; }
+.flash.flipped .inner { transform: rotateY(180deg); }
+.face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; background: var(--surface); border: 1px solid var(--line);
+  display: grid; align-content: center; justify-items: center; gap: 12px; padding: 24px; text-align: center; }
+.face.rear { transform: rotateY(180deg); background: var(--accent-soft); border-color: transparent; }
+.face .term { font-family: var(--font-display); font-size: 1.9rem; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+.face .note { font-size: 0.92rem; color: var(--muted); max-width: 34ch; }
+.rate { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rate button { border: 0; border-radius: 12px; padding: 10px 4px; font-weight: 700; display: grid; gap: 1px; background: var(--surface-2); }
+.rate button small { font-weight: 400; font-size: 0.75rem; color: var(--muted); }
+.rate .again { background: var(--bad-soft); }
+.rate .good { background: var(--good-soft); }
+@media (prefers-reduced-motion: reduce) { .flash .inner, .meter > i { transition: none; } }
+
+/* stories */
+.story-list { display: grid; gap: 10px; }
+.story-item { text-align: left; display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; padding: 12px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.lvl { width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; background: var(--sun-soft); }
+.done-tag { font-size: 0.75rem; font-weight: 700; color: var(--good); }
+.sent { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 10px 12px; border-radius: 10px; font-size: 1.12rem; line-height: 1.55; }
+.sent:hover { background: var(--surface-2); }
+.sent .en { display: block; font-size: 0.92rem; color: var(--muted); margin-top: 4px; font-style: italic; }
+.sent.speaking { background: var(--sun-soft); }
+.gloss { display: grid; gap: 6px; }
+.gloss-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.gloss-row:last-child { border-bottom: 0; }
+.gloss-row .w { font-weight: 700; flex: 1; min-width: 0; }
+.add { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 4px 10px; font-size: 0.82rem; font-weight: 700; }
+.add[disabled] { color: var(--good); border-color: transparent; background: var(--good-soft); }
+
+/* quiz */
+.opts { display: grid; gap: 8px; }
+.opt { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px 14px; font-size: 1.02rem; }
+.opt.right { background: var(--good-soft); border-color: var(--good); }
+.opt.wrong { background: var(--bad-soft); border-color: var(--bad); }
+.prompt-big { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; line-height: 1.2; }
+input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.feedback { padding: 12px 14px; border-radius: 12px; font-weight: 700; }
+.feedback.ok { background: var(--good-soft); color: var(--good); }
+.feedback.no { background: var(--bad-soft); color: var(--bad); }
+.conj { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.conj td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.conj td:first-child { color: var(--muted); width: 45%; }
+.accents { display: flex; gap: 6px; flex-wrap: wrap; }
+.accents button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; min-width: 38px; padding: 6px 8px; font-weight: 700; }
+
+/* phrasebook */
+.phrase { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.phrase:last-child { border-bottom: 0; }
+.phrase .txt { flex: 1; min-width: 0; }
+.phrase .txt b { display: block; font-size: 1.05rem; }
+.phrase .txt span { color: var(--muted); font-size: 0.92rem; }
+
+/* chat */
+.chat { display: grid; gap: 10px; }
+.msg { max-width: 88%; padding: 10px 14px; border-radius: 16px; display: grid; gap: 6px; }
+.msg.bot { background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.me { background: var(--accent); color: var(--accent-ink); justify-self: end; border-bottom-right-radius: 4px; }
+.msg .tr { font-size: 0.88rem; color: var(--muted); font-style: italic; }
+.msg .fix { font-size: 0.88rem; background: var(--sun-soft); border-radius: 8px; padding: 6px 8px; }
+.composer { display: flex; gap: 8px; }
+.composer input { flex: 1; min-width: 0; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; z-index: 20; max-width: calc(100% - 32px); }
+.back { background: none; border: 0; color: var(--accent); font-weight: 700; padding: 6px 0; justify-self: start; }
+.tip { background: var(--sun-soft); border-radius: var(--r); padding: 14px; display: grid; gap: 4px; }
+.empty { text-align: center; padding: 28px 16px; display: grid; gap: 10px; justify-items: center; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="tile" aria-hidden="true"></span>Tara Usap</div>
+    <div class="pills">
+      <span class="pill sun" title="Day streak" id="streakPill">🔥 0</span>
+      <span class="pill" title="Points today" id="xpPill">0 pts</span>
+    </div>
+  </header>
+  <main id="view" aria-live="polite"></main>
+</div>
+
+<nav class="tabs" aria-label="Sections">
+  <button data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>Ngayon</button>
+  <button data-tab="cards"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/></svg>Salita</button>
+  <button data-tab="stories"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>Kuwento</button>
+  <button data-tab="practice"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Praktis</button>
+  <button data-tab="talk"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>Usap</button>
+</nav>
+
+<script>
+"use strict";
+/* ================= CONTENT ================= */
+// Every card's 4th field names the published source it was checked against (see SRC).
+const SRC = {
+  tng: ["TagalogNow: Tagalog greetings", "https://tagalognow.com/learn/common-tagalog-greetings"],
+  tnm: ["TagalogNow: Mano po and Filipino etiquette", "https://www.tagalognow.com/learn/mano-po-and-filipino-etiquette/"],
+  tn:  ["TagalogNow dictionary", "https://www.tagalognow.com/dictionary/"],
+  tnv: ["TagalogNow: Verb aspects made simple", "https://www.tagalognow.com/learn/tagalog-verb-conjugation-aspects/"],
+  tc:  ["Tagalog.com dictionary", "https://www.tagalog.com/dictionary/"],
+  tct: ["Tagalog.com: Telling time", "https://tagalog.com/lessons/telling-time-anong-horas-na.php"],
+  om:  ["Omniglot: Useful Tagalog phrases", "https://omniglot.com/language/phrases/tagalog.php"],
+  fp:  ["FilipinoPod101: Commuting in the Philippines", "https://www.filipinopod101.com/lesson/absolute-beginner-16-commuting-in-the-philippines"],
+  fpc: ["FilipinoPod101: Classroom phrases", "https://www.filipinopod101.com/lesson/all-about-14-top-5-filipino-classroom-phrases"],
+  fpr: ["FilipinoPod101: Finding a bathroom", "https://filipinopod101.com/lesson/survival-phrases-6-how-to-say-where-is-the-bathroom-in-filipino"],
+  fpd: ["FilipinoPod101: Restaurant phrases", "https://www.filipinopod101.com/blog/2022/09/09/filipino-restaurant-phrases/"],
+  fps: ["FilipinoPod101: Explaining symptoms", "https://www.filipinopod101.com/lesson/survival-phrases-45-explaining-symptoms-in-filipino"],
+  fpt: ["FilipinoPod101: Telling time", "https://www.filipinopod101.com/blog/2020/07/31/telling-time-in-filipino/"],
+  fpb: ["FilipinoPod101: Beginner phrases", "https://www.filipinopod101.com/blog/2022/01/28/filipino-beginner-phrases/"],
+  sl:  ["TheSmartLocal: Filipino food phrases", "https://thesmartlocal.ph/filipino-food-phrases/"],
+  slb: ["TheSmartLocal: Basic Filipino phrases", "https://thesmartlocal.ph/basic-filipino-phrases/"],
+  inq: ["Inquirer: Essential Filipino gestures", "https://usa.inquirer.net/136471/4-more-essential-filipino-gestures-you-can-use-daily"],
+  pb:  ["PhilippineBeaches: Useful Tagalog for travelers", "https://www.philippinebeaches.org/?p=18976"],
+  niu: ["Northern Illinois University SEAsite: Tagalog for travelers", "https://seasite.niu.edu/tagalog/Tagalog_Default_files/Tagalog_for_travelers.htm"],
+  niug:["Northern Illinois University SEAsite: Common greetings", "https://seasite.niu.edu/trans/tagalog/EnglishtoTagalogTexts/greetings.htm"],
+  lg:  ["Ling: Tagalog market words and phrases", "https://ling-app.com/blog/tagalog-market-words-and-phrases/"],
+  lgd: ["Ling: Giving directions in Tagalog", "https://ling-app.com/blog/giving-directions-in-tagalog/"],
+  lgc: ["Ling: Ordering coffee in Tagalog", "https://ling-app.com/fil/order-coffee-in-tagalog/"],
+  lge: ["Ling: Tagalog emergency phrases", "https://ling-app.com/blog/tagalog-emergency-phrases/"],
+  lgh: ["Ling: Tagalog honorifics", "https://ling-app.com/blog/tagalog-honorifics/"],
+  kwc: ["Kaiwa: Filipino conversation starters", "https://trykaiwa.com/blog/filipino-conversation-starters-that-work"],
+  kwp: ["Kaiwa: Filipino party conversations", "https://trykaiwa.com/blog/filipino-party-conversations-realistic"],
+  kwh: ["Kaiwa: Haggling at the market", "https://trykaiwa.com/blog/fil-haggling-market-realistic"],
+  kwf: ["Kaiwa: Coffee shop ordering", "https://trykaiwa.com/blog/filipino-coffee-shop-ordering-realistic"],
+  kwm: ["Kaiwa: Phrases foreigners get wrong", "https://trykaiwa.com/blog/filipino-phrases-foreigners-get-wrong-2026"],
+  wpt: ["Wikipedia: Date and time notation in the Philippines", "https://en.wikipedia.org/wiki/Date_and_time_notation_in_the_Philippines"],
+  oxn: ["Oxnard College: Filipino numbers", "https://www.oxnardcollege.edu/sites/oxnardcollege/files/media/pdf_document/2024/oc_-_fili_-_numbers.pdf"],
+  ltd: ["LearningTagalog.com: Days of the week", "https://learningtagalog.com/grammar/other_describing_words/expressing_time_frequency_or_duration/days_of_the_week.html"],
+  ltu: ["LearningTagalog.com: The -um- affix", "https://learningtagalog.com/grammar/verbs/verb_affixes/um_rep2.html"],
+  ud:  ["Universal Dependencies: Tagalog treebank aspect forms", "https://universaldependencies.org/treebanks/tl_trg/tl_trg-feat-Aspect.html"]
+};
+
+const DECKS = [
+  { id: "survival", name: "Survival basics", es: "Mga pangunahin", cards: [
+    ["Kumusta?", "Hello / How are you?", "", "tng"], ["Magandang umaga", "Good morning", "Until about 11 AM.", "tng"],
+    ["Magandang tanghali", "Good midday", "About 11 AM to 1 PM.", "tng"], ["Magandang hapon", "Good afternoon", "", "tng"],
+    ["Magandang gabi", "Good evening", "", "tng"], ["Salamat po", "Thank you (respectful)", "Casual: salamat.", "tng"],
+    ["Walang anuman", "You're welcome", "Closer to 'don't mention it'.", "om"], ["Opo", "Yes (respectful)", "Casual: oo.", "tng"],
+    ["Hindi po", "No (respectful)", "Casual: hindi.", "tng"], ["Pasensya na", "Sorry", "Casual. The formal word is paumanhin.", "om"],
+    ["Hindi ko maintindihan", "I don't understand", "", "fpc"], ["Hindi ko po naintindihan", "I didn't understand (polite)", "", "pb"],
+    ["Paki ulit po", "Please say it again", "", "fpc"], ["Saan po ang CR?", "Where is the restroom?", "CR means comfort room. It's used more than the native word banyo.", "fpr"],
+    ["Magkano po ito?", "How much is this?", "", "lg"], ["Ingat!", "Take care!", "", "tng"], ["Paalam", "Goodbye", "", "tng"],
+    ["po", "respect word", "Add it to any sentence for respect: with elders, authority figures and strangers.", "tng"]
+  ]},
+  { id: "respect", name: "Family & respect", es: "Pamilya at paggalang", cards: [
+    ["Mano po", "Your blessing, please", "Take an elder's hand and touch it to your forehead.", "tnm"],
+    ["Kuya", "older brother", "Also polite for a man older than you but not old enough to be your parent.", "lgh"],
+    ["Ate", "older sister", "Also polite for a woman older than you but not old enough to be your parent.", "lgh"],
+    ["Tito / Tita", "uncle / aunt", "Also for your friends' parents and your parents' friends.", "lgh"],
+    ["Lolo / Lola", "grandpa / grandma", "Also for anyone grandparent-aged.", "kwm"],
+    ["'Nay / 'Tay", "short for nanay (mom) / tatay (dad)", "The safest way to address elderly vendors and drivers.", "lgh"],
+    ["Mang / Aling", "Mr. / Mrs. (for older neighbors)", "Used before a name: Mang Ben, Aling Rosa.", "lgh"]
+  ]},
+  { id: "food", name: "Eating out", es: "Kainan", cards: [
+    ["Kain na", "Go ahead and eat", "", "tc"], ["Gutom na ako", "I'm hungry", "", "tc"],
+    ["Busog na ako", "I'm full", "A polite way to say you're satisfied.", "tn"], ["Busog na ako, salamat sa masarap na pagkain", "I'm full, thanks for the delicious food", "", "tn"],
+    ["Gusto ko po …", "I would like …", "", "kwf"], ["Gusto ko nito", "I'd like this one", "", "fpd"], ["Pakiabot po ng menu", "Please hand us the menu", "", "fpd"],
+    ["Isang basong tubig", "A glass of water", "", "fpd"], ["Pabili po ng …", "I'd like to buy …", "The usual way to order at a stall or counter.", "lg"],
+    ["Walang ice", "No ice", "", "kwf"], ["Pakibawasan po ng yelo", "Less ice, please", "", "lgc"],
+    ["'Yung bill po", "The bill, please", "Or draw a rectangle in the air toward the staff.", "sl"]
+  ]},
+  { id: "travel", name: "Jeepney & directions", es: "Pagbiyahe", cards: [
+    ["Para po!", "Stop, please!", "How you stop a jeepney.", "fp"], ["Bayad po", "Here's my fare", "Without po it can sound rude.", "fp"],
+    ["Pakiabot po ng bayad", "Please pass my fare to the driver", "", "fp"], ["'Yung sukli po", "My change, please", "", "fp"],
+    ["kanan", "right", "", "lgd"], ["kaliwa", "left", "", "lgd"], ["diretso", "straight", "", "lgd"],
+    ["Deretso lang tayo", "We're going straight", "", "niu"], ["Kakanan tayo sa kanto", "We'll turn right at the corner", "", "niu"],
+    ["kumaliwa", "to turn left", "", "tc"], ["pakaliwa", "toward the left", "", "tn"]
+  ]},
+  { id: "shop", name: "Market & haggling", es: "Pamimili", cards: [
+    ["Pwede po bang pabili?", "May I buy something?", "", "lg"], ["Magkano po ang lahat?", "How much for everything?", "", "lg"],
+    ["Gusto ko ito", "I like this one", "", "lg"], ["Pwede po bang tumawad?", "Can I bargain?", "Haggling is expected at the palengke (market).", "kwh"],
+    ["Tawad na po", "A discount, please", "", "kwh"], ["Pababa naman po", "Please go lower", "", "kwh"],
+    ["Magkano po ang pinakamababa?", "What's the lowest price?", "", "kwh"], ["suki", "regular customer", "What vendors call loyal buyers.", "lg"],
+    ["sukli", "change (money back)", "", "tn"]
+  ]},
+  { id: "chat", name: "Small talk", es: "Kuwentuhan", cards: [
+    ["Taga-saan ka?", "Where are you from?", "Filipinos love talking about their home province.", "kwc"],
+    ["Kumain ka na?", "Have you eaten?", "A greeting that shows you care, like 'How are you?'", "kwc"],
+    ["Ilang taon ka na?", "How old are you?", "Asking someone's age is normal in the Philippines.", "fpb"],
+    ["Ano work mo?", "What do you do for work?", "Casual Taglish.", "kwp"],
+    ["Saan ka pupunta?", "Where are you going?", "", "niug"], ["Diyan sa may kanto", "Over there by the corner", "A typical answer.", "niug"],
+    ["Magkita tayo ulit", "See you again", "", "fpb"], ["Kitakits!", "See ya!", "Slang.", "fpb"]
+  ]},
+  { id: "health", name: "Health & emergencies", es: "Emerhensiya", cards: [
+    ["Saklolo!", "Help!", "An urgent cry for help, stronger than tulong.", "tn"], ["Tulong!", "Help!", "", "tc"],
+    ["Masakit ang ulo ko", "I have a headache", "", "fps"], ["Masakit ang tiyan ko", "I have a stomachache", "", "fps"],
+    ["May lagnat ako", "I have a fever", "", "fps"], ["Nilalagnat ako", "I have a fever", "", "tc"],
+    ["May nakain akong masama", "I ate something bad", "", "lge"], ["Saan ang pinakamalapit na ospital?", "Where is the nearest hospital?", "", "lge"],
+    ["Tumawag ka ng pulis!", "Call the police!", "", "om"], ["May magnanakaw!", "There's a thief!", "", "lge"],
+    ["Nawawala ang pitaka ko", "My wallet is missing", "", "tn"], ["Nawawala ang susi ko", "My key is missing", "", "tn"]
+  ]},
+  { id: "time", name: "Time & numbers", es: "Oras at numero", cards: [
+    ["Anong oras na?", "What time is it?", "", "fpt"], ["ala-una", "one o'clock", "1:00 is ala-una, not alas-una.", "wpt"],
+    ["alas-sais", "six o'clock", "Clock times use Spanish-based numbers after alas.", "wpt"], ["alas-sais y medya", "six thirty", "", "tct"],
+    ["isa, dalawa, tatlo, apat, lima", "1, 2, 3, 4, 5", "", "oxn"], ["anim, pito, walo, siyam, sampu", "6, 7, 8, 9, 10", "", "oxn"],
+    ["dalawampu", "twenty", "", "oxn"], ["dalawampu't isa", "twenty-one", "", "oxn"], ["isang daan", "one hundred", "", "oxn"], ["isang libo", "one thousand", "", "oxn"],
+    ["Lunes, Martes, Miyerkules", "Monday, Tuesday, Wednesday", "", "ltd"], ["Huwebes, Biyernes, Sabado, Linggo", "Thursday, Friday, Saturday, Sunday", "", "ltd"]
+  ]},
+  { id: "verbs", name: "Everyday verbs", es: "Mga pandiwa", cards: [
+    ["kumain", "to eat", "kumain · kumakain · kakain", "tnv"], ["uminom", "to drink", "uminom · umiinom · iinom", "tc"],
+    ["umalis", "to leave", "umalis · umaalis · aalis", "ltu"], ["dumating", "to arrive", "dumating · dumarating · darating", "tn"],
+    ["maligo", "to take a bath", "naligo · naliligo · maliligo", "tn"], ["magtrabaho", "to work", "nagtrabaho · nagtatrabaho · magtatrabaho", "tc"],
+    ["magluto", "to cook", "nagluto · nagluluto · magluluto", "ud"], ["kainin", "to eat (something)", "kinain · kinakain · kakainin", "tnv"],
+    ["inumin", "to drink (something)", "ininom · iniinom · iinumin", "tc"]
+  ]}
+];
+
+const STORIES = [
+  { id: "sari", level: "A1", title: "Sa sari-sari store", en: "At the corner store",
+    lines: [
+      ["Nakatira si Lito sa Quezon City.", "Lito lives in Quezon City."],
+      ["Tuwing umaga, pumupunta siya sa sari-sari store.", "Every morning, he goes to the sari-sari store."],
+      ["Si Aling Nena ang tindera.", "Aling Nena is the shopkeeper."],
+      ["—Magandang umaga po, Aling Nena!", "\"Good morning, Aling Nena!\""],
+      ["—Magandang umaga, Lito! Ano ang bibilhin mo?", "\"Good morning, Lito! What are you buying?\""],
+      ["—Pabili po ng limang pandesal at isang kape.", "\"I'd like five pandesal and one coffee, please.\""],
+      ["—Bente singko lahat.", "\"Twenty-five in all.\""],
+      ["Nagbayad si Lito ng singkwenta.", "Lito paid with a fifty."],
+      ["—Heto ang sukli mo.", "\"Here's your change.\""],
+      ["—Salamat po! Ingat po kayo.", "\"Thank you! Take care.\""],
+      ["Umuwi si Lito at nag-almusal kasama ang pamilya niya.", "Lito went home and had breakfast with his family."]
+    ],
+    gloss: [["tindera", "shopkeeper (woman)"], ["bibilhin", "will buy (it)"], ["pabili po ng", "I'd like to buy"], ["pandesal", "Filipino bread roll"], ["lahat", "all / in total"], ["sukli", "change (money)"], ["umuwi", "went home"]],
+    quiz: [["Ano ang binili ni Lito?", ["Kanin at isda", "Pandesal at kape", "Tubig"], 1], ["Magkano lahat?", ["₱25", "₱50", "₱15"], 0], ["Sino ang tindera?", ["Aling Nena", "Lito", "Ate Rosa"], 0]]
+  },
+  { id: "jeep", level: "A1", title: "Sa jeep", en: "On the jeepney",
+    lines: [
+      ["Bago pa si Anna sa Maynila.", "Anna is still new in Manila."],
+      ["Gusto niyang pumunta sa SM Megamall.", "She wants to go to SM Megamall."],
+      ["Sumakay siya ng jeep sa kanto.", "She got on a jeepney at the corner."],
+      ["—Kuya, dadaan po ba ito sa Megamall?", "\"Kuya, does this pass by Megamall?\""],
+      ["—Oo, sakay na!", "\"Yes, get on!\""],
+      ["—Pakiabot po ng bayad. Isa lang po, Megamall.", "\"Please pass my fare. Just one, to Megamall.\""],
+      ["Ipinasa ng mga pasahero ang pera sa drayber.", "The passengers passed the money to the driver."],
+      ["Pagkalipas ng dalawampung minuto, nakita niya ang mall.", "After twenty minutes, she saw the mall."],
+      ["—Para po! —sabi ni Anna.", "\"Stop, please!\" Anna said."],
+      ["Huminto ang jeep at bumaba siya.", "The jeepney stopped and she got off."],
+      ["—Salamat po, Kuya!", "\"Thank you, Kuya!\""]
+    ],
+    gloss: [["bago", "new"], ["sumakay", "got on / rode"], ["dadaan", "will pass by"], ["pakiabot po ng bayad", "please pass my fare"], ["pasahero", "passenger"], ["para", "stop (in a vehicle)"], ["bumaba", "got off"]],
+    quiz: [["Saan pumunta si Anna?", ["SM Megamall", "Palengke", "Paaralan"], 0], ["Ano ang sinabi niya para huminto ang jeep?", ["Bayad po", "Para po!", "Salamat"], 1], ["Ilang minuto ang biyahe?", ["Sampu", "Dalawampu", "Tatlumpu"], 1]]
+  },
+  { id: "palengke", level: "A2", title: "Sa palengke", en: "At the market",
+    lines: [
+      ["Tuwing Sabado, namamalengke si Aling Rosa kasama ang anak niyang si Ben.", "Every Saturday, Aling Rosa goes to the market with her son Ben."],
+      ["Maingay at maraming tao sa palengke.", "The market is noisy and full of people."],
+      ["—Magkano po ang isang kilo ng kamatis? —tanong ni Aling Rosa.", "\"How much is a kilo of tomatoes?\" asks Aling Rosa."],
+      ["—Sisenta po, Ate.", "\"Sixty, Ate.\""],
+      ["—Pababa naman po. Puwede bang singkwenta?", "\"Please go lower. Can you do fifty?\""],
+      ["—Sige na nga, para sa suki ko.", "\"Oh, all right, for my regular customer.\""],
+      ["Gusto ni Ben ng mangga, pero hindi pa hinog ang mga ito.", "Ben wants mangoes, but they aren't ripe yet."],
+      ["—Bukas po, hinog na ang mga 'yan —sabi ng tindero.", "\"Tomorrow those will be ripe,\" says the vendor."],
+      ["Saging na lang ang binili nila.", "They bought bananas instead."],
+      ["Sa bahay, nagluto si Aling Rosa ng sinigang.", "At home, Aling Rosa cooked sinigang."]
+    ],
+    gloss: [["namamalengke", "goes to the market"], ["maingay", "noisy"], ["kamatis", "tomato"], ["pababa naman po", "please go lower"], ["suki", "regular customer"], ["hinog", "ripe"], ["na lang", "instead / just"]],
+    quiz: [["Magkano ang kamatis sa huli?", ["₱60", "₱50", "₱40"], 1], ["Bakit hindi sila bumili ng mangga?", ["Mahal", "Hindi pa hinog", "Wala"], 1], ["Ano ang niluto ni Aling Rosa?", ["Adobo", "Sinigang", "Pansit"], 1]]
+  },
+  { id: "susi", level: "A2", title: "Ang nawawalang susi", en: "The missing key",
+    lines: [
+      ["Alas-onse na ng gabi nang bumalik si Mark sa hotel sa Cebu.", "It was already eleven at night when Mark got back to his hotel in Cebu."],
+      ["Hinanap niya ang susi sa bulsa niya, pero wala.", "He looked for the key in his pocket, but it wasn't there."],
+      ["Pumunta siya sa front desk.", "He went to the front desk."],
+      ["—Magandang gabi po. Nawawala po ang susi ng kuwarto ko.", "\"Good evening. My room key is missing.\""],
+      ["—Walang problema, sir. Anong numero po ng kuwarto ninyo?", "\"No problem, sir. What's your room number?\""],
+      ["—Room 312 po.", "\"Room 312.\""],
+      ["—Puwede ko po bang makita ang ID ninyo?", "\"May I see your ID?\""],
+      ["Ibinigay ni Mark ang pasaporte niya, at binigyan siya ng bagong susi.", "Mark handed over his passport, and he was given a new key."],
+      ["—Anong oras po ang almusal?", "\"What time is breakfast?\""],
+      ["—Alas-sais hanggang alas-diyes po.", "\"From six to ten.\""],
+      ["Kinabukasan, nakita ni Mark ang lumang susi sa loob ng sapatos niya!", "The next day, Mark found the old key inside his shoe!"]
+    ],
+    gloss: [["bumalik", "came back"], ["bulsa", "pocket"], ["nawawala", "missing"], ["kuwarto", "room"], ["almusal", "breakfast"], ["kinabukasan", "the next day"], ["luma", "old"]],
+    quiz: [["Ano ang nawawala kay Mark?", ["Pasaporte", "Susi", "Sapatos"], 1], ["Anong oras ang almusal?", ["6 hanggang 10", "7 hanggang 9", "8 hanggang 11"], 0], ["Saan nakita ang lumang susi?", ["Sa bulsa", "Sa sapatos", "Sa front desk"], 1]]
+  },
+  { id: "botika", level: "A2", title: "Sa botika", en: "At the pharmacy",
+    lines: [
+      ["Nagbabakasyon si Paul sa Boracay.", "Paul is on vacation in Boracay."],
+      ["Kahapon, kumain siya ng maraming seafood. Ngayon, may sakit siya.", "Yesterday he ate a lot of seafood. Today, he's sick."],
+      ["Pumasok siya sa isang maliit na botika.", "He goes into a small pharmacy."],
+      ["—Magandang hapon po. Ano po ang maitutulong ko?", "\"Good afternoon. How can I help you?\""],
+      ["—Masakit po ang tiyan ko, at may lagnat ako.", "\"I have a stomachache, and I have a fever.\""],
+      ["—May nakain po akong masama kahapon.", "\"I ate something bad yesterday.\""],
+      ["—Inumin po ninyo ito tatlong beses sa isang araw, pagkatapos kumain.", "\"Take this three times a day, after eating.\""],
+      ["—Uminom din po kayo ng maraming tubig.", "\"Drink lots of water too.\""],
+      ["Nagpasalamat si Paul. Ngayong araw, lugaw lang ang kakainin niya.", "Paul thanks her. Today he'll eat only lugaw."]
+    ],
+    gloss: [["nagbabakasyon", "is on vacation"], ["may sakit", "is sick"], ["botika", "pharmacy"], ["lagnat", "fever"], ["inumin", "to drink / take (medicine)"], ["kakainin", "will eat (it)"], ["lugaw", "rice porridge"]],
+    quiz: [["Bakit may sakit si Paul?", ["Kumain siya ng maraming seafood", "Hindi siya natulog", "Uminom siya ng kape"], 0], ["Ilang beses sa isang araw iinumin ang gamot?", ["Isa", "Dalawa", "Tatlo"], 2], ["Ano ang kakainin niya ngayon?", ["Lechon", "Lugaw", "Seafood"], 1]]
+  },
+  { id: "bus", level: "B1", title: "Ang bus papuntang Baguio", en: "The bus to Baguio",
+    lines: [
+      ["Noong Biyernes, kailangang sumakay ni Carla ng bus papuntang Baguio nang alas-sais ng umaga.", "Last Friday, Carla had to catch the bus to Baguio at six in the morning."],
+      ["Nag-set siya ng alarm, pero nakalimutan niyang i-charge ang cellphone niya.", "She set an alarm, but she forgot to charge her phone."],
+      ["Nang magising siya, alas-singko y medya na.", "When she woke up, it was already five thirty."],
+      ["Nagbihis siya agad at umalis nang hindi nag-aalmusal.", "She got dressed right away and left without eating breakfast."],
+      ["Sa wakas, may tricycle na huminto.", "Finally, a tricycle stopped."],
+      ["—Kuya, sa terminal po! Nagmamadali po ako!", "\"Kuya, to the terminal, please! I'm in a hurry!\""],
+      ["Dumating siya nang alas-sais y singko. Wala nang tao sa sakayan.", "She arrived at five past six. No one was left at the boarding area."],
+      ["Pero may narinig siyang anunsyo: huli nang dalawampung minuto ang bus papuntang Baguio.", "But she heard an announcement: the bus to Baguio was twenty minutes late."],
+      ["Tumawa si Carla, bumili ng kape at ensaymada, at naghintay.", "Carla laughed, bought a coffee and an ensaymada, and waited."],
+      ["Mula noon, chinacharge na niya ang cellphone niya bago matulog.", "Since then, she charges her phone before going to sleep."]
+    ],
+    gloss: [["noong Biyernes", "last Friday"], ["nakalimutan", "forgot"], ["nang magising", "when (she) woke up"], ["sa wakas", "finally"], ["nagmamadali", "in a hurry"], ["huli", "late"], ["naghintay", "waited"]],
+    quiz: [["Bakit hindi tumunog ang alarm?", ["Walang baterya ang cellphone", "Hindi niya ito inilagay", "Sira ang cellphone"], 0], ["Anong oras siya dumating?", ["5:30", "6:05", "6:20"], 1], ["Ano ang nangyari sa bus?", ["Umalis na ito", "Huli ito nang dalawampung minuto", "Kinansela ito"], 1]]
+  }
+];
+
+const ASPECTS = ["Infinitive / command", "Completed (done)", "Ongoing (doing)", "Contemplated (will do)"];
+const VERBS = {
+  kumain:    { root: "kain", group: "-um-", src: "tnv", en: ["to eat", "ate", "is eating", "will eat"], forms: ["kumain", "kumain", "kumakain", "kakain"] },
+  uminom:    { root: "inom", group: "-um-", src: "tc", en: ["to drink", "drank", "is drinking", "will drink"], forms: ["uminom", "uminom", "umiinom", "iinom"], note: "Also used for taking medicine." },
+  umalis:    { root: "alis", group: "-um-", src: "ltu", en: ["to leave", "left", "is leaving", "will leave"], forms: ["umalis", "umalis", "umaalis", "aalis"], note: "Roots starting with a vowel copy just that vowel: aalis." },
+  pumunta:   { root: "punta", group: "-um-", src: "ltu", en: ["to go", "went", "is going", "will go"], forms: ["pumunta", "pumunta", "pumupunta", "pupunta"], note: "Built with the regular -um- rule (copy the first consonant + vowel)." },
+  bumili:    { root: "bili", group: "-um-", src: "ltu", en: ["to buy", "bought", "is buying", "will buy"], forms: ["bumili", "bumili", "bumibili", "bibili"], note: "Built with the regular -um- rule (copy the first consonant + vowel)." },
+  sumakay:   { root: "sakay", group: "-um-", src: "ltu", en: ["to ride", "rode", "is riding", "will ride"], forms: ["sumakay", "sumakay", "sumasakay", "sasakay"], note: "Built with the regular -um- rule (copy the first consonant + vowel)." },
+  dumating:  { root: "dating", group: "-um-", src: "tn", en: ["to arrive", "arrived", "is arriving", "will arrive"], forms: ["dumating", "dumating", "dumarating", "darating"], note: "The d turns into r between vowels: dumarating." },
+  magtrabaho:{ root: "trabaho", group: "mag-", src: "tc", en: ["to work", "worked", "is working", "will work"], forms: ["magtrabaho", "nagtrabaho", "nagtatrabaho", "magtatrabaho"] },
+  magluto:   { root: "luto", group: "mag-", src: "ud", en: ["to cook", "cooked", "is cooking", "will cook"], forms: ["magluto", "nagluto", "nagluluto", "magluluto"] },
+  maligo:    { root: "ligo", group: "ma-", src: "tn", en: ["to bathe", "bathed", "is bathing", "will bathe"], forms: ["maligo", "naligo", "naliligo", "maliligo"] },
+  kainin:    { root: "kain", group: "-in", src: "tnv", en: ["to eat (it)", "ate (it)", "is eating (it)", "will eat (it)"], forms: ["kainin", "kinain", "kinakain", "kakainin"], note: "-in verbs put the focus on the thing being eaten." },
+  inumin:    { root: "inom", group: "-in", src: "tc", en: ["to drink (it)", "drank (it)", "is drinking (it)", "will drink (it)"], forms: ["inumin", "ininom", "iniinom", "iinumin"], note: "Sources differ on the future: iinumin is the more common spelling." }
+};
+
+const TIPS = [
+  ["Po and opo are your best friends", "Po doesn't change the meaning, only the tone. Use it with elders, authority figures and strangers. Answer yes with opo."],
+  ["Kuya, Ate, Tito, Lolo: match the age", "Kuya and Ate are for people a bit older than you. Someone your parents' age is Tito or Tita, and grandparent-aged is Lolo or Lola. Calling a 60-year-old man Kuya is a common foreigner mistake."],
+  ["Clock times use Spanish numbers", "Say ala-una for 1:00, then alas-dos, alas-tres and so on. Half past is y medya: alas-sais y medya = 6:30."],
+  ["Verbs show aspect, not tense", "A verb tells you if an action is done, ongoing or coming up: kumain (ate), kumakain (is eating), kakain (will eat). Copy the first syllable of the root for ongoing and future."],
+  ["'Kumain ka na?' is a greeting", "It works like 'How are you?' and shows care. Refusing food can seem impolite, so accept at least a little."],
+  ["Taglish is normal", "Filipinos mix English into Tagalog all the time: 'Ano work mo?', 'Walang ice', 'Yung bill po'. You don't have to avoid English words."]
+];
+
+const SCENARIOS = [
+  { id: "sari", name: "Buy at a sari-sari store", role: "a friendly shopkeeper (tindera) at a sari-sari store in Quezon City", open: "Magandang umaga! Ano po ang bibilhin ninyo?", openEn: "Good morning! What would you like to buy?" },
+  { id: "jeep", name: "Ride a jeepney", role: "a jeepney driver in Manila, with a helpful passenger who chimes in", open: "Sakay na! Saan ka bababa?", openEn: "Get on! Where are you getting off?" },
+  { id: "karinderya", name: "Eat at a karinderya", role: "the cook at a small karinderya (local eatery) in Cebu", open: "Magandang tanghali po! Kain na po kayo. Ano po ang gusto ninyo?", openEn: "Good midday! Come and eat. What would you like?" },
+  { id: "lola", name: "Meet the family", role: "a warm Filipino grandmother (lola) meeting her grandchild's foreign friend for the first time", open: "Ay, ikaw pala ang kaibigan ni Mia! Halika, pasok ka. Kumain ka na ba?", openEn: "Oh, so you're Mia's friend! Come in. Have you eaten?" },
+  { id: "doctor", name: "See a doctor", role: "a kind doctor at a clinic in Davao", open: "Magandang umaga po. Ano po ang nararamdaman ninyo?", openEn: "Good morning. What are you feeling?" },
+  { id: "free", name: "Free chat", role: "a patient Tagalog tutor who chats about everyday life", open: "Kumusta! Ano ang ginawa mo ngayong araw?", openEn: "Hi! What did you do today?" }
+];
+
+function srcLink(k) { const s = SRC[k]; return s ? `<a href="${s[1]}" target="_blank" rel="noopener">${esc(s[0])}</a>` : ""; }
+
+function sourcesCard() {
+  const used = Object.keys(SRC);
+  return `<details class="card"><summary><b>Sources</b> <span class="small muted">· ${used.length} references</span></summary>
+    <p class="small muted" style="margin-block:8px">Every flashcard and verb form was checked against one of these and names it on the card. Phrases I couldn't confirm were left out. The stories are original practice texts built from the checked phrases, and the chat partner is AI, so neither comes from a published source.</p>
+    <ul class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">${used.map(k => `<li>${srcLink(k)}</li>`).join("")}</ul></details>`;
+}
+/* ================= STATE ================= */
+const DAY = 864e5;
+const today = () => new Date().toISOString().slice(0, 10);
+const LS_KEY = "tarausap.v1";
+const blank = () => ({ cards: {}, days: {}, streak: { last: null, count: 0 }, mine: [], storiesDone: [], dir: "es-en", goal: 30, newPerDay: 10, newToday: { d: null, n: 0 } });
+let S = blank();
+try { const raw = localStorage.getItem(LS_KEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
+
+let progressDoc = null;   // db doc when signed in
+let saveTimer = null, saving = false, saveAgain = false;
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {}
+  if (!progressDoc) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 1200);
+}
+async function flush() {
+  if (!progressDoc) return;
+  if (saving) { saveAgain = true; return; }
+  saving = true;
+  try { await progressDoc.set({ state: JSON.stringify(S), at: Date.now() }); } catch (e) {}
+  saving = false;
+  if (saveAgain) { saveAgain = false; flush(); }
+}
+(async () => {
+  try {
+    if (!window.claude?.use) return;
+    const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+    if (!db || !user) return;
+    const id = await user.id();
+    if (!id) return;
+    const ref = db.collection("data/users/" + id).doc("progress");
+    const snap = await ref.get();
+    const remote = snap.exists ? snap.data() : null;
+    progressDoc = ref;
+    if (remote && remote.state) {
+      const r = JSON.parse(remote.state);
+      if (countReviews(r) >= countReviews(S)) { S = Object.assign(blank(), r); try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {} render(); }
+      else flush();
+    } else if (countReviews(S) > 0) flush();
+  } catch (e) {}
+})();
+function countReviews(s) { return Object.values(s.days || {}).reduce((a, b) => a + b, 0) + Object.keys(s.cards || {}).length; }
+
+function addXP(n) {
+  const d = today();
+  S.days[d] = (S.days[d] || 0) + n;
+  if (S.streak.last !== d) {
+    const y = new Date(Date.now() - DAY).toISOString().slice(0, 10);
+    S.streak.count = S.streak.last === y ? S.streak.count + 1 : 1;
+    S.streak.last = d;
+  }
+  save(); updatePills();
+}
+function streakNow() {
+  const y = new Date(Date.now() - DAY).toISOString().slice(0, 10);
+  return (S.streak.last === today() || S.streak.last === y) ? S.streak.count : 0;
+}
+function updatePills() {
+  $("#streakPill").textContent = "🔥 " + streakNow();
+  $("#xpPill").textContent = (S.days[today()] || 0) + " pts";
+}
+
+/* ================= HELPERS ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[¿?¡!.,'’-]/g, "").replace(/\s+/g, " ").trim();
+const SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
+function speakBtn(text) { return !voice ? "" : `<button class="speak" data-say="${esc(text)}" aria-label="Listen: ${esc(text)}">${SPK}</button>`; }
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); }
+
+// Phones rarely ship a Filipino voice; Indonesian spells and sounds close enough to be a useful stand-in.
+let voice = null, voiceNative = false, booted = false;
+function pickVoice() {
+  try {
+    const vs = speechSynthesis.getVoices();
+    const fil = vs.find(v => /^(fil|tl)\b/i.test(v.lang));
+    const near = vs.find(v => /^id\b/i.test(v.lang)) || vs.find(v => /^ms\b/i.test(v.lang));
+    const had = !!voice;
+    voice = fil || near || null; voiceNative = !!fil;
+    if (!had && voice && booted) render();
+  } catch (e) {}
+}
+try { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {}
+function voiceNote() {
+  if (voiceNative) return "";
+  return `<p class="small muted">${voice ? "Your phone has no Filipino voice, so audio uses a close-sounding Indonesian voice. Pronunciation is approximate." : "Your phone has no Filipino voice, so audio is off."} On Android, add Filipino in Settings → Text-to-speech → Google → Install voice data.</p>`;
+}
+function say(text, rate = 0.9, onend) {
+  if (!voice) { if (onend) onend(); return; }
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/[—«»…]/g, " "));
+    u.lang = voice.lang; u.voice = voice; u.rate = rate;
+    if (onend) u.onend = onend;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-say]"); if (b) { e.stopPropagation(); say(b.dataset.say); } });
+
+function allDecks() {
+  const d = DECKS.slice();
+  if (S.mine.length) d.push({ id: "mine", name: "My words", es: "Mis palabras", cards: S.mine });
+  return d;
+}
+function cardState(es) { return S.cards[es]; }
+function isDue(es) { const c = S.cards[es]; return c && c.due <= Date.now(); }
+function dueCount(deck) { return deck.cards.filter(c => isDue(c[0])).length; }
+function learnedCount(deck) { return deck.cards.filter(c => S.cards[c[0]]).length; }
+function totalDue() { return allDecks().reduce((a, d) => a + dueCount(d), 0); }
+function newLeft() { if (S.newToday.d !== today()) S.newToday = { d: today(), n: 0 }; return Math.max(0, S.newPerDay - S.newToday.n); }
+
+function addMine(es, en) {
+  if (S.mine.some(m => m[0] === es) || DECKS.some(d => d.cards.some(c => c[0] === es))) return false;
+  S.mine.push([es, en]); save(); return true;
+}
+
+/* ================= ROUTER ================= */
+let tab = "home";
+function go(t) {
+  tab = t;
+  try { speechSynthesis.cancel(); } catch (e) {}
+  document.querySelectorAll("nav.tabs button").forEach(b => { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  render();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => { sub = null; go(b.dataset.tab); }));
+let sub = null; // per-tab sub-view
+function render() {
+  updatePills();
+  const v = $("#view");
+  const views = { home: viewHome, cards: viewCards, stories: viewStories, practice: viewPractice, talk: viewTalk };
+  v.innerHTML = "";
+  const sec = document.createElement("section");
+  v.appendChild(sec);
+  views[tab](sec);
+}
+
+/* ================= HOME ================= */
+function viewHome(el) {
+  const pts = S.days[today()] || 0, pct = Math.min(100, Math.round(pts / S.goal * 100));
+  const due = totalDue(), nl = newLeft();
+  const dayIdx = Math.floor(Date.now() / DAY);
+  const all = DECKS.flatMap(d => d.cards);
+  const pod = all[dayIdx % all.length];
+  const tip = TIPS[dayIdx % TIPS.length];
+  const days = [...Array(7)].map((_, i) => {
+    const d = new Date(Date.now() - (6 - i) * DAY);
+    const k = d.toISOString().slice(0, 10);
+    return { k, lbl: d.toLocaleDateString("fil", { weekday: "narrow" }), v: S.days[k] || 0 };
+  });
+  const totalLearned = Object.keys(S.cards).length;
+  el.innerHTML = `
+    <div class="hero">
+      <div class="eyebrow" style="color:inherit;opacity:.8">Today's goal · ${pts} / ${S.goal} pts</div>
+      <div class="big">${pct >= 100 ? "Ayos! Goal done for today." : due ? `${due} card${due > 1 ? "s" : ""} to review, ${nl} new waiting` : `${nl} new phrases ready for you`}</div>
+      <div class="meter"><i style="width:${pct}%"></i></div>
+      <button class="btn sun" id="startToday">${due ? "Review now" : "Learn new phrases"}</button>
+    </div>
+    <div class="card pod">
+      <div class="row between"><span class="eyebrow">Phrase of the day</span>${speakBtn(pod[0])}</div>
+      <div class="es">${esc(pod[0])}</div>
+      <div class="muted">${esc(pod[1])}${pod[2] ? " · " + esc(pod[2]) : ""}</div>
+    </div>
+    <div class="grid2">
+      <button class="action" data-go="stories"><span class="eyebrow">Read</span><b>Short stories</b><span class="small muted">${S.storiesDone.length} of ${STORIES.length} finished</span></button>
+      <button class="action" data-go="talk"><span class="eyebrow">Speak</span><b>Role-play chat</b><span class="small muted">Store, jeepney, family…</span></button>
+      ${voice ? `<button class="action" data-go="practice" data-mode="listen"><span class="eyebrow">Listen</span><b>Ear training</b><span class="small muted">Hear it, pick the meaning</span></button>` : `<button class="action" data-go="practice" data-mode="write"><span class="eyebrow">Write</span><b>Write it</b><span class="small muted">See English, type Tagalog</span></button>`}
+      <button class="action" data-go="practice" data-mode="verbs"><span class="eyebrow">Grammar</span><b>Verb drill</b><span class="small muted">Done, doing, will do</span></button>
+    </div>
+    <div class="card">
+      <div class="row between" style="margin-bottom:10px"><h3>This week</h3><span class="small muted">${totalLearned} phrases learned · 🔥 ${streakNow()} day streak</span></div>
+      <div class="week">${days.map(d => `<div class="${d.k === today() ? "today" : ""}"><i><s style="height:${Math.min(100, d.v / S.goal * 100)}%"></s></i>${d.lbl}</div>`).join("")}</div>
+    </div>
+    <div class="tip"><span class="eyebrow">Teacher's tip</span><b>${esc(tip[0])}</b><span>${esc(tip[1])}</span></div>
+    <div class="card row between">
+      <label for="goalSel" class="small">Daily goal</label>
+      <select id="goalSel" style="width:auto">${[15, 30, 50, 80].map(g => `<option value="${g}" ${g === S.goal ? "selected" : ""}>${g} pts · ${{ 15: "casual", 30: "regular", 50: "serious", 80: "intense" }[g]}</option>`).join("")}</select>
+    </div>
+    ${sourcesCard()}${voiceNote()}<p class="small muted">${progressDoc ? "Progress is saved to your account." : "Progress is saved on this device."} Points: 1 per card, 2 per right answer, 10 per story, 3 per chat message.</p>`;
+  $("#startToday", el).onclick = () => { sub = { type: "study", deck: "all" }; go("cards"); };
+  el.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { sub = b.dataset.mode ? { type: b.dataset.mode } : null; go(b.dataset.go); });
+  $("#goalSel", el).onchange = e => { S.goal = +e.target.value; save(); render(); };
+}
+
+/* ================= FLASHCARDS ================= */
+function viewCards(el) {
+  if (sub && sub.type === "study") return viewStudy(el);
+  if (sub && sub.type === "browse") return viewBrowse(el);
+  const decks = allDecks();
+  el.innerHTML = `
+    <div class="row between"><h1>Salita</h1><button class="chip" id="dirBtn">${S.dir === "es-en" ? "TL → EN" : "EN → TL"}</button></div>
+    <p class="muted">Spaced repetition: cards you know come back less often. ${newLeft()} new cards left today.</p>
+    <button class="btn block" id="studyAll" ${totalDue() || newLeft() ? "" : "disabled"}>Study all due (${totalDue()})</button>
+    <div class="grid2">${decks.map(d => {
+      const l = learnedCount(d), du = dueCount(d);
+      return `<button class="deck" data-deck="${d.id}"><span class="eyebrow">${esc(d.es)}</span><h3>${esc(d.name)}</h3>
+        <span class="count">${l}/${d.cards.length} learned${du ? ` · <b style="color:var(--accent)">${du} due</b>` : ""}</span>
+        <span class="bar"><i style="width:${l / d.cards.length * 100}%"></i></span></button>`;
+    }).join("")}</div>
+    <h2 style="margin-top:6px">Phrasebook</h2>
+    <p class="muted small">Every phrase in the app, searchable, with audio.</p>
+    <input type="text" id="pbSearch" placeholder="Search Spanish or English…" autocomplete="off">
+    <div class="card" id="pbList" style="padding-block:4px"></div>`;
+  $("#dirBtn", el).onclick = () => { S.dir = S.dir === "es-en" ? "en-es" : "es-en"; save(); render(); };
+  $("#studyAll", el).onclick = () => { sub = { type: "study", deck: "all" }; render(); };
+  el.querySelectorAll("[data-deck]").forEach(b => b.onclick = () => { sub = { type: "browse", deck: b.dataset.deck }; render(); window.scrollTo(0, 0); });
+  const listEl = $("#pbList", el);
+  const drawPB = q => {
+    const nq = norm(q || "");
+    const rows = decks.flatMap(d => d.cards.map(c => ({ c, d }))).filter(({ c }) => !nq || norm(c[0]).includes(nq) || norm(c[1]).includes(nq));
+    const shown = nq ? rows.slice(0, 60) : rows.filter(r => r.d.id === "survival");
+    listEl.innerHTML = shown.length ? shown.map(({ c }) => `<div class="phrase"><div class="txt"><b>${esc(c[0])}</b><span>${esc(c[1])}</span>${c[3] ? `<span class="small" style="display:block">Source: ${srcLink(c[3])}</span>` : ""}</div>${speakBtn(c[0])}</div>`).join("") + (nq ? "" : `<p class="small muted" style="padding:10px 0">Showing survival basics. Search to find any phrase.</p>`)
+      : `<p class="muted" style="padding:12px 0">No phrase matches “${esc(q)}”.</p>`;
+  };
+  $("#pbSearch", el).oninput = e => drawPB(e.target.value);
+  drawPB("");
+}
+
+function viewBrowse(el) {
+  const d = allDecks().find(x => x.id === sub.deck);
+  if (!d) { sub = null; return viewCards(el); }
+  el.innerHTML = `
+    <button class="back" id="back">‹ All decks</button>
+    <div><span class="eyebrow">${esc(d.es)}</span><h1>${esc(d.name)}</h1></div>
+    <div class="row"><button class="btn" id="study">Study this deck</button><button class="btn ghost" id="quiz">Quick quiz</button></div>
+    <div class="card" style="padding-block:4px">${d.cards.map(c => {
+      const s = cardState(c[0]);
+      const tag = !s ? "new" : s.iv >= 21 ? "strong" : s.iv >= 3 ? "learning" : "fresh";
+      return `<div class="phrase"><div class="txt"><b>${esc(c[0])}</b><span>${esc(c[1])}${c[2] ? " · " + esc(c[2]) : ""}</span>${c[3] ? `<span class="small" style="display:block">Source: ${srcLink(c[3])}</span>` : ""}</div><span class="small muted">${tag}</span>${speakBtn(c[0])}</div>`;
+    }).join("")}</div>`;
+  $("#back", el).onclick = () => { sub = null; render(); };
+  $("#study", el).onclick = () => { sub = { type: "study", deck: d.id }; render(); };
+  $("#quiz", el).onclick = () => { sub = { type: "quiz", deck: d.id }; go("practice"); };
+}
+
+function buildQueue(deckId) {
+  const decks = deckId === "all" ? allDecks() : allDecks().filter(d => d.id === deckId);
+  const cards = decks.flatMap(d => d.cards);
+  const due = shuffle(cards.filter(c => isDue(c[0])));
+  let fresh = cards.filter(c => !S.cards[c[0]]);
+  if (deckId === "all") fresh = DECKS.flatMap(d => d.cards).filter(c => !S.cards[c[0]]).concat(S.mine.filter(c => !S.cards[c[0]]));
+  fresh = fresh.slice(0, newLeft());
+  return due.concat(fresh);
+}
+function schedule(es, grade) { // grade: 0 again, 1 hard, 2 good, 3 easy
+  const isNew = !S.cards[es];
+  const c = S.cards[es] || { iv: 0, ease: 2.5, reps: 0, due: 0 };
+  if (isNew) { if (S.newToday.d !== today()) S.newToday = { d: today(), n: 0 }; S.newToday.n++; }
+  if (grade === 0) { c.iv = 0; c.ease = Math.max(1.3, c.ease - 0.2); c.due = Date.now() + 60e3; }
+  else {
+    if (grade === 1) { c.iv = Math.max(1, Math.round(c.iv * 1.2)); c.ease = Math.max(1.3, c.ease - 0.15); }
+    if (grade === 2) c.iv = c.iv === 0 ? 1 : c.iv === 1 ? 3 : Math.round(c.iv * c.ease);
+    if (grade === 3) { c.iv = c.iv === 0 ? 4 : Math.round(c.iv * c.ease * 1.3); c.ease += 0.15; }
+    c.due = Date.now() + c.iv * DAY - 3600e3;
+  }
+  c.reps++;
+  S.cards[es] = c;
+}
+function previewIv(es, g) {
+  const c = S.cards[es] || { iv: 0, ease: 2.5 };
+  if (g === 0) return "1 min";
+  const iv = g === 1 ? Math.max(1, Math.round(c.iv * 1.2)) : g === 2 ? (c.iv === 0 ? 1 : c.iv === 1 ? 3 : Math.round(c.iv * c.ease)) : (c.iv === 0 ? 4 : Math.round(c.iv * c.ease * 1.3));
+  return iv < 30 ? iv + "d" : Math.round(iv / 30) + "mo";
+}
+function viewStudy(el) {
+  if (!sub.queue) { sub.queue = buildQueue(sub.deck); sub.done = 0; }
+  const q = sub.queue;
+  if (!q.length) {
+    el.innerHTML = `<button class="back" id="back">‹ Decks</button>
+      <div class="card empty"><h2>${sub.done ? "Magaling!" : "All caught up"}</h2>
+      <p class="muted">${sub.done ? `You reviewed ${sub.done} card${sub.done > 1 ? "s" : ""}.` : "Nothing is due right now."} ${newLeft() ? "" : "You've also used today's new cards."}</p>
+      <div class="row" style="justify-content:center"><button class="btn" id="more">Read a story</button><button class="btn ghost" id="quiz">Quick quiz</button></div></div>`;
+    $("#back", el).onclick = () => { sub = null; render(); };
+    $("#more", el).onclick = () => { sub = null; go("stories"); };
+    $("#quiz", el).onclick = () => { sub = { type: "quiz", deck: "all" }; go("practice"); };
+    return;
+  }
+  const c = q[0];
+  const front = S.dir === "es-en" ? c[0] : c[1], back = S.dir === "es-en" ? c[1] : c[0];
+  const isNew = !S.cards[c[0]];
+  el.innerHTML = `
+    <div class="row between"><button class="back" id="back">‹ Stop</button><span class="small muted">${q.length} left${isNew ? " · new card" : ""}</span></div>
+    <div class="flash" id="flash" role="button" tabindex="0" aria-label="Tap to flip">
+      <div class="inner">
+        <div class="face"><span class="eyebrow">${S.dir === "es-en" ? "Tagalog" : "English"}</span><div class="term">${esc(front)}</div>
+          ${S.dir === "es-en" ? speakBtn(c[0]) : ""}<span class="small muted">Tap to flip</span></div>
+        <div class="face rear"><span class="eyebrow">${S.dir === "es-en" ? "English" : "Tagalog"}</span><div class="term">${esc(back)}</div>
+          ${speakBtn(c[0])}${c[2] ? `<div class="note">${esc(c[2])}</div>` : ""}${c[3] ? `<div class="note small">Source: ${srcLink(c[3])}</div>` : ""}</div>
+      </div>
+    </div>
+    <div class="rate" id="rate" hidden>
+      ${["Again", "Hard", "Good", "Easy"].map((l, i) => `<button class="${["again", "", "good", ""][i]}" data-g="${i}">${l}<small>${previewIv(c[0], i)}</small></button>`).join("")}
+    </div>
+    <button class="btn block ghost" id="showBtn">Show answer</button>`;
+  const flip = () => {
+    $("#flash", el).classList.add("flipped"); $("#rate", el).hidden = false; $("#showBtn", el).hidden = true;
+    if (S.dir === "en-es") say(c[0]);
+  };
+  $("#flash", el).onclick = e => { if (!e.target.closest("[data-say],a")) flip(); };
+  $("#flash", el).onkeydown = e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); } };
+  $("#showBtn", el).onclick = flip;
+  if (S.dir === "es-en") setTimeout(() => say(c[0]), 250);
+  $("#back", el).onclick = () => { sub = null; render(); };
+  el.querySelectorAll("[data-g]").forEach(b => b.onclick = () => {
+    const g = +b.dataset.g;
+    schedule(c[0], g); q.shift(); sub.done++;
+    if (g === 0) q.splice(Math.min(q.length, 3), 0, c);
+    addXP(1); render();
+  });
+}
+
+/* ================= STORIES ================= */
+function viewStories(el) {
+  if (sub && sub.type === "story") return viewStory(el);
+  el.innerHTML = `
+    <h1>Mga Kuwento</h1>
+    <p class="muted">Practice stories written for this app from the checked phrases in your decks. They aren't from a published source, so ask a native speaker if a line sounds off. Tap any sentence to see the English. Tap the speaker to hear it.</p>
+    <div class="story-list">${STORIES.map(s => `
+      <button class="story-item" data-story="${s.id}"><span class="lvl">${s.level}</span>
+        <span><h3>${esc(s.title)}</h3><span class="small muted">${esc(s.en)} · ${s.lines.length} sentences</span></span>
+        ${S.storiesDone.includes(s.id) ? `<span class="done-tag">✓ Read</span>` : `<span class="small muted">›</span>`}</button>`).join("")}</div>
+    <p class="small muted">A1 = beginner, A2 = elementary, B1 = intermediate (longer sentences, everyday Taglish).</p>`;
+  el.querySelectorAll("[data-story]").forEach(b => b.onclick = () => { sub = { type: "story", id: b.dataset.story, show: {}, answers: {} }; render(); window.scrollTo(0, 0); });
+}
+function viewStory(el) {
+  const s = STORIES.find(x => x.id === sub.id);
+  const allShown = s.lines.every((_, i) => sub.show[i]);
+  el.innerHTML = `
+    <button class="back" id="back">‹ All stories</button>
+    <div><span class="eyebrow">Level ${s.level}</span><h1>${esc(s.title)}</h1><p class="muted">${esc(s.en)}</p></div>
+    <div class="row">${voice ? `<button class="btn" id="play">▶ Listen to the story</button>` : ""}<button class="btn ghost" id="toggleAll">${allShown ? "Hide English" : "Show all English"}</button></div>
+    <div class="card" style="padding:6px">${s.lines.map((l, i) => `<button class="sent" data-i="${i}">${esc(l[0])}${sub.show[i] ? `<span class="en">${esc(l[1])}</span>` : ""}</button>`).join("")}</div>
+    <div class="card gloss"><div class="row between"><h3>Key words</h3><span class="small muted">Add to your flashcards</span></div>
+      ${s.gloss.map((g, i) => {
+        const has = S.mine.some(m => m[0] === g[0]);
+        return `<div class="gloss-row"><span class="w">${esc(g[0])} <span class="muted" style="font-weight:400">— ${esc(g[1])}</span></span>${speakBtn(g[0])}<button class="add" data-g="${i}" ${has ? "disabled" : ""}>${has ? "Added" : "+ Add"}</button></div>`;
+      }).join("")}</div>
+    <div class="card" style="display:grid;gap:14px"><h3>Did you understand?</h3>
+      ${s.quiz.map((qq, qi) => `<div style="display:grid;gap:8px"><b>${esc(qq[0])}</b><div class="opts">${qq[1].map((o, oi) => {
+        const a = sub.answers[qi];
+        const cls = a === undefined ? "" : oi === qq[2] ? "right" : oi === a ? "wrong" : "";
+        return `<button class="opt ${cls}" data-q="${qi}" data-o="${oi}" ${a !== undefined ? "disabled" : ""}>${esc(o)}</button>`;
+      }).join("")}</div></div>`).join("")}
+      <div id="storyResult"></div>
+    </div>`;
+  $("#back", el).onclick = () => { sub = null; render(); };
+  el.querySelectorAll(".sent").forEach(b => b.onclick = () => { const i = +b.dataset.i; sub.show[i] = !sub.show[i]; say(s.lines[i][0]); render(); });
+  $("#toggleAll", el).onclick = () => { const v = !allShown; s.lines.forEach((_, i) => sub.show[i] = v); render(); };
+  if ($("#play", el)) $("#play", el).onclick = () => {
+    let i = 0;
+    const next = () => {
+      el.querySelectorAll(".sent").forEach(x => x.classList.remove("speaking"));
+      if (i >= s.lines.length || tab !== "stories") return;
+      const b = el.querySelector(`.sent[data-i="${i}"]`); if (b) { b.classList.add("speaking"); b.scrollIntoView({ block: "center", behavior: "smooth" }); }
+      say(s.lines[i][0], 0.85, () => { i++; setTimeout(next, 350); });
+    };
+    next();
+  };
+  el.querySelectorAll(".add[data-g]").forEach(b => b.onclick = () => { const g = s.gloss[+b.dataset.g]; if (addMine(g[0], g[1])) toast("Added to My words"); else toast("Already in your cards"); render(); });
+  el.querySelectorAll(".opt[data-q]").forEach(b => b.onclick = () => {
+    const qi = +b.dataset.q, oi = +b.dataset.o;
+    sub.answers[qi] = oi;
+    if (oi === s.quiz[qi][2]) addXP(2);
+    if (Object.keys(sub.answers).length === s.quiz.length && !S.storiesDone.includes(s.id)) { S.storiesDone.push(s.id); addXP(10); }
+    render();
+    const done = Object.keys(sub.answers).length === s.quiz.length;
+    if (done) {
+      const right = s.quiz.filter((qq, i) => sub.answers[i] === qq[2]).length;
+      $("#storyResult").innerHTML = `<div class="feedback ${right === s.quiz.length ? "ok" : "no"}">${right}/${s.quiz.length} correct. ${right === s.quiz.length ? "Perpekto!" : "Tap the sentences to check the English and read it again."}</div>`;
+    }
+  });
+}
+
+/* ================= PRACTICE ================= */
+function viewPractice(el) {
+  if (sub && sub.type === "quiz") return viewQuiz(el, false);
+  if (sub && sub.type === "listen") return viewQuiz(el, true);
+  if (sub && sub.type === "verbs") return viewVerbs(el);
+  if (sub && sub.type === "write") return viewWrite(el);
+  el.innerHTML = `
+    <h1>Praktis</h1>
+    <p class="muted">Short drills. Each round is 10 questions.</p>
+    <div class="story-list">
+      <button class="story-item" data-m="quiz"><span class="lvl">Aa</span><span><h3>Quick quiz</h3><span class="small muted">Pick the right meaning, both directions</span></span><span class="small muted">›</span></button>
+      ${voice ? `<button class="story-item" data-m="listen"><span class="lvl">♪</span><span><h3>Ear training</h3><span class="small muted">Hear Tagalog, choose what it means</span></span><span class="small muted">›</span></button>` : ""}
+      <button class="story-item" data-m="write"><span class="lvl">✎</span><span><h3>Write it</h3><span class="small muted">See English, type the Tagalog</span></span><span class="small muted">›</span></button>
+      <button class="story-item" data-m="verbs"><span class="lvl">-um-</span><span><h3>Verb drill</h3><span class="small muted">Done, doing, will do: 12 everyday verbs</span></span><span class="small muted">›</span></button>
+    </div>
+    <div class="tip"><span class="eyebrow">How to use this</span><span>Do your flashcards first, then one drill. Ten focused minutes a day beats an hour on Sunday.</span></div>`;
+  el.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { sub = { type: b.dataset.m, deck: "all" }; render(); });
+}
+function quizPool(deckId) {
+  const decks = deckId && deckId !== "all" ? allDecks().filter(d => d.id === deckId) : allDecks();
+  let pool = decks.flatMap(d => d.cards);
+  const learned = pool.filter(c => S.cards[c[0]]);
+  if (learned.length >= 10 && deckId === "all") pool = learned;
+  return pool;
+}
+function viewQuiz(el, listen) {
+  if (!sub.items) {
+    const pool = quizPool(sub.deck);
+    const all = DECKS.flatMap(d => d.cards);
+    sub.items = shuffle(pool).slice(0, 10).map(c => {
+      const rev = !listen && Math.random() < 0.5;
+      const distract = shuffle(all.filter(x => x[0] !== c[0])).slice(0, 3);
+      const opts = shuffle([c, ...distract]);
+      return { c, rev, opts, ans: opts.indexOf(c) };
+    });
+    sub.i = 0; sub.score = 0; sub.picked = null;
+  }
+  const back = () => { sub = null; render(); };
+  if (sub.i >= sub.items.length) {
+    el.innerHTML = `<div class="card empty"><span class="eyebrow">${listen ? "Ear training" : "Quick quiz"}</span><h2>${sub.score}/${sub.items.length}</h2>
+      <p class="muted">${sub.score >= 9 ? "Ang galing!" : sub.score >= 6 ? "Magaling! Keep reviewing." : "Keep going. Missed phrases will stick with more flashcard reviews."}</p>
+      <div class="row" style="justify-content:center"><button class="btn" id="again">Another round</button><button class="btn ghost" id="b">Done</button></div></div>`;
+    $("#again", el).onclick = () => { sub = { type: sub.type, deck: sub.deck }; render(); };
+    $("#b", el).onclick = back;
+    return;
+  }
+  const it = sub.items[sub.i];
+  const promptTxt = listen ? "" : it.rev ? it.c[1] : it.c[0];
+  el.innerHTML = `
+    <div class="row between"><button class="back" id="back">‹ Practice</button><span class="small muted">${sub.i + 1} / ${sub.items.length} · ${sub.score} right</span></div>
+    <div class="card" style="display:grid;gap:12px;justify-items:start">
+      <span class="eyebrow">${listen ? "What did you hear?" : it.rev ? "How do you say this in Tagalog?" : "What does this mean?"}</span>
+      ${listen ? `<button class="btn" id="replay">▶ Play again</button><button class="chip" id="slow">Play slowly</button>` : `<div class="prompt-big">${esc(promptTxt)}</div>${!it.rev ? speakBtn(it.c[0]) : ""}`}
+    </div>
+    <div class="opts">${it.opts.map((o, i) => {
+      const cls = sub.picked === null ? "" : i === it.ans ? "right" : i === sub.picked ? "wrong" : "";
+      return `<button class="opt ${cls}" data-o="${i}" ${sub.picked !== null ? "disabled" : ""}>${esc(it.rev ? o[0] : o[1])}</button>`;
+    }).join("")}</div>
+    ${sub.picked !== null ? `<div class="card row between"><span><b>${esc(it.c[0])}</b> <span class="muted">— ${esc(it.c[1])}</span></span>${speakBtn(it.c[0])}</div><button class="btn block" id="next">Next</button>` : ""}`;
+  $("#back", el).onclick = back;
+  if (listen) {
+    $("#replay", el).onclick = () => say(it.c[0]);
+    $("#slow", el).onclick = () => say(it.c[0], 0.6);
+    if (sub.picked === null) setTimeout(() => say(it.c[0]), 200);
+  }
+  el.querySelectorAll(".opt").forEach(b => b.onclick = () => {
+    sub.picked = +b.dataset.o;
+    if (sub.picked === it.ans) { sub.score++; addXP(2); }
+    else if (S.cards[it.c[0]]) { S.cards[it.c[0]].due = Date.now(); save(); }
+    if (!listen) say(it.c[0]);
+    render();
+  });
+  const n = $("#next", el); if (n) n.onclick = () => { sub.i++; sub.picked = null; render(); };
+}
+
+function accentRow() { return ""; }
+function wireAccents() {}
+function checkAnswer(given, target) {
+  const g = given.trim().toLowerCase().replace(/[¿?¡!.,]/g, "").replace(/\s+/g, " ");
+  const t = target.toLowerCase().replace(/[¿?¡!.,…]/g, "").replace(/\s+/g, " ").trim();
+  if (g === t) return "exact";
+  if (norm(given) === norm(target)) return "accent";
+  return "wrong";
+}
+function viewWrite(el) {
+  if (!sub.items) {
+    sub.items = shuffle(quizPool("all").filter(c => c[0].length <= 34 && !c[0].includes("…"))).slice(0, 10);
+    sub.i = 0; sub.score = 0; sub.result = null;
+  }
+  const back = () => { sub = null; render(); };
+  if (sub.i >= sub.items.length) {
+    el.innerHTML = `<div class="card empty"><span class="eyebrow">Write it</span><h2>${sub.score}/${sub.items.length}</h2><p class="muted">Typing from memory is the hardest skill. Every right answer counts double.</p>
+      <div class="row" style="justify-content:center"><button class="btn" id="again">Another round</button><button class="btn ghost" id="b">Done</button></div></div>`;
+    $("#again", el).onclick = () => { sub = { type: "write" }; render(); };
+    $("#b", el).onclick = back; return;
+  }
+  const c = sub.items[sub.i];
+  el.innerHTML = `
+    <div class="row between"><button class="back" id="back">‹ Practice</button><span class="small muted">${sub.i + 1} / ${sub.items.length} · ${sub.score} right</span></div>
+    <div class="card" style="display:grid;gap:12px"><span class="eyebrow">Write in Tagalog</span><div class="prompt-big">${esc(c[1])}</div></div>
+    <form id="wf" style="display:grid;gap:10px">
+      <input type="text" id="wIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Isulat dito…" ${sub.result ? "disabled" : ""}>
+      ${accentRow("#wIn")}
+      ${sub.result ? "" : `<div class="row"><button class="btn" type="submit">Check</button><button class="btn ghost" type="button" id="skip">I don't know</button></div>`}
+    </form>
+    ${sub.result ? `<div class="feedback ${sub.result === "wrong" ? "no" : "ok"}">${sub.result === "exact" ? "Tama!" : sub.result === "accent" ? "Right! Exact spelling:" : "Not quite. The answer:"} ${esc(c[0])}</div>
+      <div class="row">${speakBtn(c[0])}<button class="btn" id="next" style="flex:1">Next</button></div>` : ""}`;
+  $("#back", el).onclick = back;
+  wireAccents(el);
+  const inp = $("#wIn", el); if (sub.result) inp.value = sub.given || ""; else inp.focus();
+  $("#wf", el).onsubmit = e => {
+    e.preventDefault(); if (sub.result || !inp.value.trim()) return;
+    sub.given = inp.value; sub.result = checkAnswer(inp.value, c[0]);
+    if (sub.result !== "wrong") { sub.score++; addXP(4); } say(c[0]); render();
+  };
+  const sk = $("#skip", el); if (sk) sk.onclick = () => { sub.given = ""; sub.result = "wrong"; say(c[0]); render(); };
+  const n = $("#next", el); if (n) n.onclick = () => { sub.i++; sub.result = null; render(); };
+}
+
+function viewVerbs(el) {
+  if (!sub.mode) sub.mode = "drill";
+  const back = () => { sub = null; render(); };
+  const names = Object.keys(VERBS);
+  const head = `
+    <div class="row between"><button class="back" id="back">‹ Practice</button><span class="small muted">${sub.score || 0} right this session</span></div>
+    <h1>Pandiwa</h1>
+    <p class="muted small">Tagalog verbs show whether an action is done, ongoing, or coming up. Repeat the first syllable for ongoing and future: kain → kumakain → kakain.</p>
+    <div class="chips"><button class="chip" data-v="drill" aria-pressed="${sub.mode === "drill"}">Drill</button><button class="chip" data-v="table" aria-pressed="${sub.mode === "table"}">Show tables</button></div>`;
+  const table = (v, hi) => `<table class="conj">${ASPECTS.map((a, i) => `<tr><td>${a}</td><td>${i === hi ? `<b>${VERBS[v].forms[i]}</b>` : VERBS[v].forms[i]} <span class="muted small">${esc(VERBS[v].en[i])}</span></td></tr>`).join("")}</table>`;
+  if (sub.mode === "table") {
+    el.innerHTML = head + names.map(v => `<div class="card"><div class="row between"><h3>${v} <span class="muted small" style="font-weight:400">${esc(VERBS[v].en[0])} · root ${VERBS[v].root} · ${VERBS[v].group}</span></h3>${speakBtn(VERBS[v].forms.join(", "))}</div>
+      ${table(v, -1)}${VERBS[v].note ? `<p class="small muted" style="margin-top:8px">${esc(VERBS[v].note)}</p>` : ""}<p class="small muted" style="margin-top:6px">Source: ${srcLink(VERBS[v].src)}</p></div>`).join("");
+  } else {
+    if (!sub.q) { sub.q = { v: names[Math.floor(Math.random() * names.length)], a: 1 + Math.floor(Math.random() * 3) }; sub.result = null; }
+    const { v, a } = sub.q, ans = VERBS[v].forms[a];
+    el.innerHTML = head + `
+      <div class="card" style="display:grid;gap:8px"><span class="eyebrow">${ASPECTS[a]}</span>
+        <div class="prompt-big">“${esc(VERBS[v].en[a])}”</div><span class="muted">from ${v} · root <b>${VERBS[v].root}</b> · ${VERBS[v].group} verb</span></div>
+      <form id="vf" style="display:grid;gap:10px">
+        <input type="text" id="vIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the verb…" ${sub.result ? "disabled" : ""}>
+        ${sub.result ? "" : `<button class="btn" type="submit">Check</button>`}
+      </form>
+      ${sub.result ? `<div class="feedback ${sub.result === "wrong" ? "no" : "ok"}">${sub.result === "exact" ? "Tama!" : sub.result === "accent" ? "Right! Exact spelling:" : "The answer is"} ${ans}</div>
+        <div class="card">${table(v, a)}${VERBS[v].note ? `<p class="small muted" style="margin-top:8px">${esc(VERBS[v].note)}</p>` : ""}<p class="small muted" style="margin-top:6px">Source: ${srcLink(VERBS[v].src)}</p></div>
+        <button class="btn block" id="next">Next verb</button>` : ""}`;
+    const inp = $("#vIn", el); if (sub.result) inp.value = sub.given || ""; else inp.focus();
+    $("#vf", el).onsubmit = e => {
+      e.preventDefault(); if (sub.result || !inp.value.trim()) return;
+      sub.given = inp.value; sub.result = checkAnswer(inp.value, ans);
+      if (sub.result !== "wrong") { sub.score = (sub.score || 0) + 1; addXP(2); }
+      say(ans); render();
+    };
+    const n = $("#next", el); if (n) n.onclick = () => { sub.q = null; render(); };
+  }
+  $("#back", el).onclick = back;
+  el.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { sub.mode = b.dataset.v; render(); });
+}
+
+/* ================= TALK (role-play with Claude) ================= */
+let samplePromise = null;
+function getSample() { if (!samplePromise) samplePromise = window.claude?.use ? claude.use("sample") : Promise.resolve(null); return samplePromise; }
+const chats = {};
+function viewTalk(el) {
+  if (!sub || sub.type !== "chat") {
+    el.innerHTML = `
+      <h1>Usap</h1>
+      <p class="muted">Role-play real situations with an AI partner. Its replies are AI-generated, not checked against a source. It answers in simple Tagalog, gives you the English, and gently corrects your mistakes.</p>
+      <div class="card row between"><label for="lvl" class="small">Your level</label>
+        <select id="lvl" style="width:auto">${["A1 beginner", "A2 elementary", "B1 intermediate"].map(l => `<option ${S.level === l ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+      <div class="story-list">${SCENARIOS.map(s => `<button class="story-item" data-sc="${s.id}"><span class="lvl">${{ sari: "🏪", jeep: "🛺", karinderya: "🍲", lola: "👵", doctor: "🩺", free: "💬" }[s.id]}</span>
+        <span><h3>${esc(s.name)}</h3><span class="small muted">${esc(s.open)}</span></span><span class="small muted">›</span></button>`).join("")}</div>
+      <p class="small muted">Tip: it's fine to mix in English when you're stuck. Your partner will show you how to say it in Spanish.</p>`;
+    $("#lvl", el).onchange = e => { S.level = e.target.value; save(); };
+    el.querySelectorAll("[data-sc]").forEach(b => b.onclick = () => {
+      const sc = SCENARIOS.find(s => s.id === b.dataset.sc);
+      if (!chats[sc.id]) chats[sc.id] = [{ role: "bot", es: sc.open, en: sc.openEn }];
+      sub = { type: "chat", sc: sc.id }; render();
+    });
+    return;
+  }
+  const sc = SCENARIOS.find(s => s.id === sub.sc);
+  const log = chats[sc.id];
+  el.innerHTML = `
+    <div class="row between"><button class="back" id="back">‹ Scenarios</button><button class="chip" id="reset">Start over</button></div>
+    <div><span class="eyebrow">Role-play · ${esc(S.level || "A1 beginner")}</span><h2>${esc(sc.name)}</h2></div>
+    <div class="chat" id="chat">${log.map(m => m.role === "bot"
+      ? `<div class="msg bot"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:8px"><span style="flex:1;min-width:0">${esc(m.es)}</span>${speakBtn(m.es)}</div>${m.en ? `<span class="tr">${esc(m.en)}</span>` : ""}${m.fix ? `<span class="fix">✏️ ${esc(m.fix)}</span>` : ""}</div>`
+      : `<div class="msg me">${esc(m.es)}</div>`).join("")}
+      ${sub.busy ? `<div class="msg bot"><span class="muted">Nagta-type…</span></div>` : ""}
+      ${sub.err ? `<div class="feedback no">${esc(sub.err)}</div>` : ""}
+    </div>
+    <form class="composer" id="cf"><input type="text" id="cIn" autocomplete="off" placeholder="Sumagot sa Tagalog…" ${sub.busy ? "disabled" : ""}><button class="btn" type="submit" ${sub.busy ? "disabled" : ""}>Send</button></form>
+    ${accentRow("#cIn")}`;
+  wireAccents(el);
+  $("#back", el).onclick = () => { sub = null; render(); };
+  $("#reset", el).onclick = () => { chats[sc.id] = [{ role: "bot", es: sc.open, en: sc.openEn }]; sub.err = null; render(); };
+  const inp = $("#cIn", el);
+  if (sub.draft) inp.value = sub.draft;
+  inp.oninput = () => sub.draft = inp.value;
+  if (!sub.busy) inp.focus({ preventScroll: true });
+  $("#cf", el).onsubmit = async e => {
+    e.preventDefault();
+    const text = inp.value.trim(); if (!text || sub.busy) return;
+    log.push({ role: "me", es: text }); sub.draft = ""; sub.busy = true; sub.err = null; render();
+    window.scrollTo(0, document.body.scrollHeight);
+    const sample = await getSample();
+    if (!sample) { sub.busy = false; sub.err = "Chat needs the Claude app or claude.ai, signed in. Flashcards, stories and drills work everywhere."; log.pop(); sub.draft = text; render(); return; }
+    const transcript = log.map(m => (m.role === "bot" ? "Partner: " : "Learner: ") + m.es).join("\n");
+    const prompt = `You are ${sc.role}, role-playing with an English-speaking learner of Tagalog (Filipino) at CEFR level ${S.level || "A1 beginner"}.
+Rules:
+- Stay in character and keep the scene moving. Reply in natural, simple everyday Tagalog suited to the level: 1-3 short sentences, end with a question or prompt so the learner keeps talking.
+- Speak the way people in the Philippines really do: use po/opo where the role calls for respect, and common English loanwords (Taglish) only where a Filipino naturally would.
+- If the learner's last message has Tagalog mistakes or uses English, write a short, kind correction in English showing the corrected Spanish sentence. If it was correct, set "correction" to "".
+Return ONLY JSON: {"reply": "<Tagalog reply>", "english": "<English translation of reply>", "correction": "<correction or empty>"}
+
+Conversation so far:
+${transcript}`;
+    try {
+      const r = await sample.json(prompt, { cache: false, modelTier: "quick" });
+      log.push({ role: "bot", es: String(r.reply || "…"), en: String(r.english || ""), fix: String(r.correction || "") });
+      addXP(3);
+      say(String(r.reply || ""));
+    } catch (err) {
+      log.pop(); sub.draft = text;
+      sub.err = err && err.code === "not_granted" ? "Chat wasn't allowed. You can turn it on from this page's permissions." : err && err.code === "rate_limited" ? "Too many messages at once. Wait a minute and send again." : "Couldn't reach your chat partner. Check your connection and send again.";
+    }
+    sub.busy = false;
+    if (tab === "talk") { render(); window.scrollTo(0, document.body.scrollHeight); }
+  };
+}
+
+/* boot */
+go("home");
+booted = true;
+</script>
