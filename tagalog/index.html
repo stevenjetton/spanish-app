@@ -560,21 +560,35 @@ function speakBtn(text) { return !voice ? "" : `<button class="speak" data-say="
 function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); }
 
 // Phones rarely ship a Filipino voice; Indonesian spells and sounds close enough to be a useful stand-in.
-let voice = null, voiceNative = false, booted = false;
+// Without a real Filipino voice, Tagalog is not read aloud unless the learner opts into the stand-in voice.
+let voice = null, voiceNative = false, nearVoice = null, booted = false, tlStandIn = false;
+try { tlStandIn = localStorage.getItem("tarausap.standin") === "on"; } catch (e) {}
 function pickVoice() {
   try {
     const vs = speechSynthesis.getVoices();
     const fil = vs.find(v => /^(fil|tl)\b/i.test(v.lang));
-    const near = vs.find(v => /^id\b/i.test(v.lang)) || vs.find(v => /^ms\b/i.test(v.lang));
-    const had = !!voice;
-    voice = fil || near || null; voiceNative = !!fil;
-    if (!had && voice && booted) render();
+    nearVoice = vs.find(v => /^id\b/i.test(v.lang)) || vs.find(v => /^ms\b/i.test(v.lang)) || null;
+    const had = voice;
+    voice = fil || (tlStandIn ? nearVoice : null) || null; voiceNative = !!fil;
+    if (had !== voice && booted) render();
   } catch (e) {}
+}
+function setStandIn(on) {
+  tlStandIn = on;
+  try { localStorage.setItem("tarausap.standin", on ? "on" : "off"); } catch (e) {}
+  pickVoice(); render();
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-standin]"); if (b) setStandIn(b.dataset.standin === "on"); });
+function standInToggle() {
+  if (voiceNative || !nearVoice) return "";
+  return tlStandIn
+    ? `<button class="chip" data-standin="off">Stop reading Tagalog with the stand-in voice</button>`
+    : `<button class="chip" data-standin="on">Read Tagalog with a stand-in Indonesian voice anyway</button>`;
 }
 try { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {}
 function voiceNote() {
   if (voiceNative) return "";
-  return `<p class="small muted">${voice ? "Your phone has no Filipino voice, so audio uses a close-sounding Indonesian voice. Pronunciation is approximate." : "Your phone has no Filipino voice, so audio is off."} On Android, add Filipino in Settings → Text-to-speech → Google → Install voice data.</p>`;
+  return `<div class="card" style="display:grid;gap:8px"><h3>Phone voice</h3><p class="small">${voice ? "Your phone has no Filipino voice, so Tagalog is read with a stand-in Indonesian voice. Pronunciation is only approximate." : "Your phone has no Filipino voice, so the app doesn't read Tagalog aloud. Use the Hear it links for native audio."} On Android, you can add a real Filipino voice in Settings → Text-to-speech → Google → Install voice data.</p>${standInToggle()}</div>`;
 }
 function say(text, rate = 0.9, onend) {
   if (!voice) { if (onend) onend(); return; }
@@ -1037,8 +1051,8 @@ const COACH = {
   rules: "Teach Tagalog aspect (completed, ongoing, contemplated) rather than English tenses. Model polite speech with po where a teacher naturally would.",
   strict: "These forms were checked against published sources. Use ONLY the verbs and forms in this table and never invent other verb forms. If the learner asks about a verb that isn't listed, say it isn't in your checked list yet.",
   reference: () => Object.entries(VERBS).map(([v, d]) => `${v} (root ${d.root}, ${d.group}): infinitive ${d.forms[0]} (${d.en[0]}); completed ${d.forms[1]} (${d.en[1]}); ongoing ${d.forms[2]} (${d.en[2]}); contemplated ${d.forms[3]} (${d.en[3]})`).join("\n"),
-  voiceHelp: "Phones rarely include a Filipino voice. On Android, install Filipino under Settings → Text-to-speech → Google → Install voice data. Without one, the app uses an Indonesian voice for Tagalog words, which is close but not native.",
-  noVoice: "This device has no Filipino or close voice, so only the English parts will be spoken.",
+  voiceHelp: "Phones rarely include a Filipino voice. On Android, install Filipino under Settings → Text-to-speech → Google → Install voice data. Without one, Tagalog words aren't read aloud, so tap them to hear a native speaker. If you'd rather hear something, you can turn on a stand-in Indonesian voice, which is close but not native.",
+  noVoice: "Only the English parts will be spoken on this device.",
   testEn: "Hi! I'm your verb coach. Here's how a Tagalog verb sounds:",
   testTarget: "kumain, kumakain, kakain.",
   claudePrompt: "Be my Tagalog teacher in voice mode. Teach me Tagalog verb aspects one small step at a time, starting with -um- verbs like kumain, kumakain, kakain. Explain each pattern, say examples slowly with their English meanings, then quiz me and correct my answers. Keep each turn short."
@@ -1059,6 +1073,7 @@ function voiceScore(v) {
 }
 function voicesFor(kind) { return allVoices().filter(v => kind === "en" ? /^en/i.test(v.lang || "") : COACH.voiceTest(v.lang || "")); }
 function coachVoice(kind) {
+  if (kind !== "en" && !voice) return null;
   const vs = voicesFor(kind), pref = kind === "en" ? vpref.en : vpref.target;
   return vs.find(v => v.name === pref) || vs.sort((a, b) => voiceScore(b) - voiceScore(a))[0] || null;
 }
@@ -1091,7 +1106,11 @@ function coachHear(segs) {
   return tl.length ? `<span class="hear">Hear the Tagalog: ${tl.map(t => `<a ${EXT} href="${t.includes(" ") ? gtUrl(t) : forvoUrl(t)}">${esc(t)}</a>`).join(" · ")}</span>` : "";
 }
 function segHTML(segs, mi) {
-  return segs.map((s, i) => `<span class="seg${s.lang === "en" ? "" : " seg-t"}" data-m="${mi}" data-seg="${i}">${esc(s.text)}</span>`).join(" ");
+  return segs.map((s, i) => {
+    if (s.lang === "en") return `<span class="seg" data-m="${mi}" data-seg="${i}">${esc(s.text)}</span>`;
+    const t = cleanTl(s.text);
+    return `<a class="seg seg-t" ${EXT} href="${t.includes(" ") ? gtUrl(t) : forvoUrl(t)}" data-m="${mi}" data-seg="${i}">${esc(s.text)}</a>`;
+  }).join(" ");
 }
 function playCoach(mi) {
   const m = coach.log[mi]; if (!m || m.role !== "coach") return;
@@ -1112,7 +1131,7 @@ This lesson is VOICE-FIRST: every word is read aloud by text-to-speech. Talk the
 Teach one small step per turn: name the pattern, give one or two examples, and always give the English meaning of each example. Then ask the learner ONE quick question to answer out loud (for example, "How would you say 'we eat'?").
 When the learner answers, say clearly whether it is right, give the correct form, explain the pattern behind it in one sentence, then move to the next step. Reuse the pattern on new verbs so the learner feels it working. If the learner says they don't know, teach it again more simply.
 ${COACH.rules}
-Reference forms. ${COACH.strict}
+${voice ? "" : "The learner's phone cannot pronounce Tagalog, so Tagalog segments are SHOWN on screen, not spoken, and the learner taps them to hear a native speaker. In English segments, refer to them naturally (for example: \"the word on your screen means is eating\"). Never respell Tagalog words in English letters.\n"}Reference forms. ${COACH.strict}
 ${COACH.reference()}
 Return ONLY JSON: {"segments":[{"lang":"en","text":"..."},{"lang":"${COACH.code}","text":"..."}]}
 Put every ${COACH.langName} word or phrase in its own "${COACH.code}" segment so a native ${COACH.langName} voice says it; English goes in "en" segments. Keep the whole turn under 70 words.
@@ -1148,7 +1167,7 @@ function viewCoach(el) {
     el.innerHTML = `
       <button class="back" id="back">‹ Practice</button>
       <div><span class="eyebrow">AI mode</span><h1>Verb coach</h1></div>
-      <p class="muted">An AI teacher explains verb patterns out loud, step by step, with meanings. Then it asks you a question. Answer by typing, or tap the microphone on your phone's keyboard and say it.</p>
+      <p class="muted">An AI teacher explains verb patterns out loud, step by step, with meanings. Tagalog words are highlighted: tap one to hear a native speaker. Then it asks you a question. Answer by typing, or tap the microphone on your phone's keyboard and say it.</p>
       <div class="story-list">${COACH.topics.map((t, i) => `<button class="story-item" data-topic="${i}"><span class="lvl">${i + 1}</span><span><h3>${esc(t[0])}</h3><span class="small muted">${esc(t[1])}</span></span><span class="small muted">›</span></button>`).join("")}</div>
       <div class="card" style="display:grid;gap:10px">
         <h3>Voices</h3>
@@ -1157,7 +1176,7 @@ function viewCoach(el) {
         <label class="small" for="vRate">Speed</label>
         <select id="vRate">${[[0.8, "Slow"], [1, "Normal"], [1.15, "Fast"]].map(([r, l]) => `<option value="${r}" ${(vpref.rate || 1) === r ? "selected" : ""}>${l}</option>`).join("")}</select>
         <button class="btn ghost" id="vTest">▶ Test voices</button>
-        <p class="small muted">★ marks the most natural-sounding voices. ${COACH.voiceHelp}${tv ? "" : " " + COACH.noVoice}</p>
+        <p class="small muted">★ marks the most natural-sounding voices. ${COACH.voiceHelp}${tv ? "" : " " + COACH.noVoice}</p>${standInToggle()}
       </div>
       <div class="tip"><span class="eyebrow">Want a full voice conversation?</span>
         <span>In the Claude app, tap the voice button, then say or paste this. Claude listens and answers out loud with a natural voice.</span>
@@ -1180,8 +1199,9 @@ function viewCoach(el) {
   el.innerHTML = `
     <div class="row between"><button class="back" id="back">‹ Topics</button><span class="small muted">AI-generated lesson</span></div>
     <div><span class="eyebrow">Verb coach · ${esc(S.level || "A1 beginner")}</span><h2>${esc(coach.topic[0])}</h2></div>
+    <p class="small muted">${voice ? "" : "Your phone voice reads the English. "}Tap a highlighted Tagalog word to hear a native speaker${voice ? "" : " say it"}.</p>
     <div class="chat">${coach.log.map((m, i) => m.role === "coach"
-      ? `<div class="msg bot"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:8px"><span style="flex:1;min-width:0">${segHTML(m.segs, i)}</span><button class="speak" data-play="${i}" aria-label="Play again">${SPK}</button></div>${coachHear(m.segs)}</div>`
+      ? `<div class="msg bot"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:8px"><span style="flex:1;min-width:0">${segHTML(m.segs, i)}</span><button class="speak" data-play="${i}" aria-label="Play again">${SPK}</button></div></div>`
       : `<div class="msg me">${esc(m.text)}</div>`).join("")}
       ${coach.busy ? `<div class="msg bot"><span class="muted">Thinking…</span></div>` : ""}
       ${coach.err ? `<div class="feedback no">${esc(coach.err)}</div>` : ""}
