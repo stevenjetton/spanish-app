@@ -176,6 +176,23 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .msg .tr { font-size: 0.88rem; color: var(--muted); font-style: italic; }
 .msg .fix { font-size: 0.88rem; background: var(--sun-soft); border-radius: 8px; padding: 6px 8px; }
 .composer { display: flex; gap: 8px; }
+.rp-affix { color: var(--accent); font-weight: 800; }
+.rp-copy { background: var(--sun-soft); border-radius: 4px; padding: 0 1px; }
+.rp-change { text-decoration: underline wavy var(--bad); text-underline-offset: 3px; }
+.root-card { display: grid; gap: 4px; justify-items: start; }
+.root-word { font-family: var(--font-display); font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.route-step { display: grid; gap: 2px; padding-left: 16px; border-left: 3px solid var(--accent-soft); }
+.route-form, .slot-form { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; overflow-wrap: anywhere; }
+.slots { display: grid; gap: 8px; }
+.slot { display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left; border: 2px dashed var(--line); background: var(--surface); border-radius: 14px; padding: 10px 14px; min-height: 64px; }
+.slot.active { border-color: var(--accent); border-style: solid; }
+.slot.filled { border-style: solid; border-color: var(--good); background: var(--good-soft); cursor: default; opacity: 1; }
+.slot-label { display: grid; gap: 2px; min-width: 0; }
+.slot-form { font-size: 1.3rem; color: var(--muted); }
+.slot.filled .slot-form { color: var(--fg); }
+.pool { display: flex; flex-wrap: wrap; gap: 8px; }
+.pool-chip { font-size: 1.05rem; padding: 10px 14px; }
+.pool-chip.wrong { border-color: var(--bad); background: var(--bad-soft); }
 .hear { display: block; font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
 .hear a { font-weight: 700; }
 .seg-t { font-weight: 700; color: var(--accent); }
@@ -670,7 +687,7 @@ function viewHome(el) {
       <button class="action" data-go="stories"><span class="eyebrow">Read</span><b>Short stories</b><span class="small muted">${S.storiesDone.length} of ${STORIES.length} finished</span></button>
       <button class="action" data-go="talk"><span class="eyebrow">Speak</span><b>Role-play chat</b><span class="small muted">Store, jeepney, family…</span></button>
       ${voice ? `<button class="action" data-go="practice" data-mode="listen"><span class="eyebrow">Listen</span><b>Ear training</b><span class="small muted">Hear it, pick the meaning</span></button>` : `<button class="action" data-go="practice" data-mode="write"><span class="eyebrow">Write</span><b>Write it</b><span class="small muted">See English, type Tagalog</span></button>`}
-      <button class="action" data-go="practice" data-mode="coach"><span class="eyebrow">AI · Voice</span><b>Verb coach</b><span class="small muted">Learn verb patterns by ear</span></button>
+      <button class="action" data-go="practice" data-mode="roots"><span class="eyebrow">Grammar</span><b>Root builder</b><span class="small muted">See how verbs grow from a root</span></button>
     </div>
     <div class="card">
       <div class="row between" style="margin-bottom:10px"><h3>This week</h3><span class="small muted">${totalLearned} phrases learned · 🔥 ${streakNow()} day streak</span></div>
@@ -882,12 +899,12 @@ function viewPractice(el) {
   if (sub && sub.type === "listen") return viewQuiz(el, true);
   if (sub && sub.type === "verbs") return viewVerbs(el);
   if (sub && sub.type === "write") return viewWrite(el);
-  if (sub && sub.type === "coach") return viewCoach(el);
+  if (sub && sub.type === "roots") return viewRoots(el);
   el.innerHTML = `
     <h1>Praktis</h1>
     <p class="muted">Short drills. Each round is 10 questions.</p>
     <div class="story-list">
-      <button class="story-item" data-m="coach"><span class="lvl">AI</span><span><h3>Verb coach</h3><span class="small muted">An AI teacher explains verb patterns out loud</span></span><span class="small muted">›</span></button>
+      <button class="story-item" data-m="roots"><span class="lvl">ugat</span><span><h3>Root builder</h3><span class="small muted">See the route from root to each form, then match the forms</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="quiz"><span class="lvl">Aa</span><span><h3>Quick quiz</h3><span class="small muted">Pick the right meaning, both directions</span></span><span class="small muted">›</span></button>
       ${voice ? `<button class="story-item" data-m="listen"><span class="lvl">♪</span><span><h3>Ear training</h3><span class="small muted">Hear Tagalog, choose what it means</span></span><span class="small muted">›</span></button>` : ""}
       <button class="story-item" data-m="write"><span class="lvl">✎</span><span><h3>Write it</h3><span class="small muted">See English, type the Tagalog</span></span><span class="small muted">›</span></button>
@@ -1057,6 +1074,96 @@ const COACH = {
   testTarget: "kumain, kumakain, kakain.",
   claudePrompt: "Be my Tagalog teacher in voice mode. Teach me Tagalog verb aspects one small step at a time, starting with -um- verbs like kumain, kumakain, kakain. Explain each pattern, say examples slowly with their English meanings, then quiz me and correct my answers. Keep each turn short."
 };
+
+/* ================= ROOT BUILDER ================= */
+// Each form split into parts: [affix], {copied syllable}, (sound change). Checked against VERBS on load.
+const ROUTES = {
+  kumain:     ["k[um]ain", "k[um]ain", "k[um]{a}kain", "{ka}kain"],
+  uminom:     ["[um]inom", "[um]inom", "[um]{i}inom", "{i}inom"],
+  umalis:     ["[um]alis", "[um]alis", "[um]{a}alis", "{a}alis"],
+  pumunta:    ["p[um]unta", "p[um]unta", "p[um]{u}punta", "{pu}punta"],
+  bumili:     ["b[um]ili", "b[um]ili", "b[um]{i}bili", "{bi}bili"],
+  sumakay:    ["s[um]akay", "s[um]akay", "s[um]{a}sakay", "{sa}sakay"],
+  dumating:   ["d[um]ating", "d[um]ating", "d[um]{a}(r)ating", "{da}(r)ating"],
+  magtrabaho: ["[mag]trabaho", "[nag]trabaho", "[nag]{ta}trabaho", "[mag]{ta}trabaho"],
+  magluto:    ["[mag]luto", "[nag]luto", "[nag]{lu}luto", "[mag]{lu}luto"],
+  maligo:     ["[ma]ligo", "[na]ligo", "[na]{li}ligo", "[ma]{li}ligo"],
+  kainin:     ["kain[in]", "k[in]ain", "k[in]{a}kain", "{ka}kain[in]"],
+  inumin:     ["inum[in]", "[in]inom", "[in]{i}inom", "{i}inum[in]"]
+};
+Object.entries(ROUTES).forEach(([v, fs]) => fs.forEach((f, i) => { if (f.replace(/[[\]{}()]/g, "") !== VERBS[v].forms[i]) console.error("Route doesn't match verb form:", v, f); }));
+const ROUTE_HOW = {
+  "-um-": "Put -um- after the root's first consonant: k + um + ain = kumain. For ongoing, copy the first syllable and put -um- inside it: kumakain. For future, just copy the first syllable: kakain.",
+  "um-vowel": "When the root starts with a vowel, um- goes in front: umalis. Ongoing and future copy only that first vowel: umaalis, aalis.",
+  "mag-": "mag- for the infinitive and the future, nag- for done and ongoing. Ongoing and future also copy the root's first syllable: nagtatrabaho, magtatrabaho.",
+  "ma-": "ma- for the infinitive and the future, na- for done and ongoing. Ongoing and future copy the root's first syllable: naliligo, maliligo.",
+  "-in": "-in goes at the end for the infinitive: kainin. Done and ongoing put -in- inside instead: kinain, kinakain. The future copies the first syllable and keeps -in at the end: kakainin."
+};
+function routeHow(v) { const d = VERBS[v]; return ROUTE_HOW[d.group === "-um-" && /^[aeiou]/.test(d.root) ? "um-vowel" : d.group]; }
+function routeHTML(str) {
+  const out = [];
+  str.replace(/\[([^\]]+)\]|\{([^}]+)\}|\(([^)]+)\)|([^[{(]+)/g, (m, a, c, r, t) => { out.push(a ? ["affix", a] : c ? ["copy", c] : r ? ["change", r] : ["root", t]); return m; });
+  return out.map(([k, t]) => `<span class="rp-${k}">${esc(t)}</span>`).join("");
+}
+const ROUTE_LEGEND = `<p class="small muted route-legend"><span class="rp-affix">affix</span> · <span class="rp-copy">copied syllable</span> · <span class="rp-change">sound change</span> · plain = the root</p>`;
+function newRoundFor(v) {
+  const forms = VERBS[v].forms, root = VERBS[v].root;
+  // Distractors: forms of the other verb built on the same root (kumain vs. kinain), which test the affix, not the root.
+  const extra = [...new Set(Object.keys(VERBS).filter(o => o !== v && VERBS[o].root === root).flatMap(o => VERBS[o].forms))].filter(f => !forms.includes(f)).slice(0, 3);
+  return { v, slots: [null, null, null, null], active: 0, done: false, wrong: null, pool: shuffle([...forms, ...extra].map((t, i) => ({ t, id: i, used: false }))) };
+}
+function viewRoots(el) {
+  const names = Object.keys(VERBS);
+  if (!sub.round) sub.round = newRoundFor(sub.v || names[Math.floor(Math.random() * names.length)]);
+  if (!sub.mode) sub.mode = "match";
+  const R = sub.round, v = R.v, d = VERBS[v];
+  const route = `
+    <div class="card route" style="display:grid;gap:12px">
+      ${ASPECTS.map((a, i) => `<div class="route-step"><span class="eyebrow">${a}</span>
+        <div class="route-form">${routeHTML(ROUTES[v][i])}</div><span class="small muted">“${esc(d.en[i])}”</span></div>`).join("")}
+      ${ROUTE_LEGEND}
+      <p class="small">${esc(routeHow(v))}${d.note ? " " + esc(d.note) : ""}</p>
+      ${formLinks(v)}
+      <p class="small muted">Source: ${srcLink(d.src)}</p>
+    </div>`;
+  let body;
+  if (sub.mode === "route") body = route;
+  else {
+    body = `
+      <p class="small muted">Tap a row, then tap the form that fits it.</p>
+      <div class="slots">${ASPECTS.map((a, i) => {
+        const f = R.slots[i];
+        return `<button class="slot${f ? " filled" : ""}${!f && R.active === i ? " active" : ""}" data-slot="${i}" ${f ? "disabled" : ""}>
+          <span class="slot-label"><span class="eyebrow">${a}</span><span class="small">“${esc(d.en[i])}”</span></span>
+          <span class="slot-form">${f ? routeHTML(ROUTES[v][i]) : "?"}</span></button>`;
+      }).join("")}</div>
+      ${R.done ? "" : `<div class="pool">${R.pool.map(c => `<button class="chip pool-chip${R.wrong === c.id ? " wrong" : ""}" data-chip="${c.id}" ${c.used ? "hidden" : ""}>${esc(c.t)}</button>`).join("")}</div>`}
+      ${R.wrong !== null ? `<div class="feedback no">Not that one for “${esc(d.en[R.active])}”. Look at the affix and try again.</div>` : ""}
+      ${R.done ? `<div class="feedback ok">Tama! Here's how each form is built from <b>${esc(d.root)}</b>.</div>${route}` : ""}`;
+  }
+  el.innerHTML = `
+    <button class="back" id="back">‹ Practice</button>
+    <div><span class="eyebrow">Ugat · roots</span><h1>Root builder</h1></div>
+    <div class="chips">${names.map(n => `<button class="chip" data-verb="${n}" aria-pressed="${n === v}">${esc(VERBS[n].root)}</button>`).join("")}</div>
+    <div class="card root-card"><span class="eyebrow">Root</span><div class="root-word">${esc(d.root)}</div>
+      <span class="muted">${esc(d.en[0].replace(/^to /, ""))} · makes <b>${v}</b>, a ${d.group} verb</span></div>
+    <div class="chips"><button class="chip" data-mode="match" aria-pressed="${sub.mode === "match"}">Match the forms</button><button class="chip" data-mode="route" aria-pressed="${sub.mode === "route"}">See the route</button></div>
+    ${body}
+    <button class="btn block ${R.done || sub.mode === "route" ? "" : "ghost"}" id="nextVerb">Next verb</button>`;
+  $("#back", el).onclick = () => { sub = null; render(); };
+  el.querySelectorAll("[data-verb]").forEach(b => b.onclick = () => { sub.round = newRoundFor(b.dataset.verb); render(); });
+  el.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { sub.mode = b.dataset.mode; render(); });
+  $("#nextVerb", el).onclick = () => { const others = names.filter(n => n !== v); sub.round = newRoundFor(others[Math.floor(Math.random() * others.length)]); sub.mode = "match"; render(); window.scrollTo(0, 0); };
+  el.querySelectorAll("[data-slot]").forEach(b => b.onclick = () => { R.active = +b.dataset.slot; R.wrong = null; render(); });
+  el.querySelectorAll("[data-chip]").forEach(b => b.onclick = () => {
+    const c = R.pool.find(x => x.id === +b.dataset.chip);
+    if (c.t !== d.forms[R.active]) { R.wrong = c.id; render(); return; }
+    c.used = true; R.slots[R.active] = c.t; R.wrong = null; addXP(1);
+    const next = R.slots.findIndex(x => !x);
+    if (next === -1) { R.done = true; addXP(3); } else R.active = next;
+    render();
+  });
+}
 
 /* ================= VERB COACH (AI teacher, spoken) ================= */
 let vpref = {};
