@@ -203,6 +203,16 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .pool-chip { font-size: 1.05rem; padding: 10px 14px; }
 .pool-chip.wrong { border-color: var(--bad); background: var(--bad-soft); }
 .btn:disabled { opacity: .45; }
+.mini { flex: none; border: 0; border-radius: 999px; min-width: 40px; height: 40px; display: grid; place-items: center; font-weight: 700; padding: 0 10px; }
+.mic-s { background: var(--accent); color: var(--accent-ink); }
+.mic-s svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.mic-s.on { background: var(--bad); }
+.mini.said { background: var(--surface-2); color: var(--fg); font-size: 0.85rem; }
+.mini.play { background: var(--good-soft); color: var(--good); min-width: 36px; height: 36px; }
+.mini-done { display: inline-flex; align-items: center; gap: 8px; color: var(--good); font-weight: 800; }
+.say-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.say-row:last-of-type { border-bottom: 0; }
+.say-word { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; }
 .mic { justify-self: center; width: 96px; height: 96px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; box-shadow: 0 0 0 0 var(--accent-soft); }
 .mic svg { width: 40px; height: 40px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .mic.on { background: var(--bad); }
@@ -1171,16 +1181,25 @@ function viewSpeak(el) {
 }
 
 /* ================= SPEAKING STEP (built into every exercise) ================= */
-// Each exercise asks the learner to say the Tagalog out loud before moving on. The step records them
-// and plays it back beside native audio; where the microphone is blocked, they say it and tap instead.
-// The state lives on the current exercise (sub.gate) and is cleared whenever the item changes.
+// Each exercise asks the learner to say the Tagalog out loud before moving on. A step records them and
+// plays it back beside native audio; where the microphone is blocked, they say it and tap instead.
+// Steps are keyed so one screen can hold several (e.g. one per verb form). "main" is the single step most
+// exercises use. The state lives on the current exercise (sub.gates) and is cleared whenever the item changes.
 const speakOn = () => S.speakReq !== false;
-const gateOpen = () => !speakOn() || !!(sub && sub.gate && sub.gate.done);
-function resetGate() { if (sub && sub.gate && sub.gate.url) URL.revokeObjectURL(sub.gate.url); if (sub) sub.gate = null; releaseMic(); }
+const gateState = k => (sub && sub.gates && sub.gates[k]) || {};
+const gateDone = k => !speakOn() || !!gateState(k).done;
+const gateOpen = () => gateDone("main");
+function resetGate() {
+  if (sub && sub.gates) Object.values(sub.gates).forEach(g => { if (g.url) URL.revokeObjectURL(g.url); });
+  if (sub) sub.gates = null;
+  releaseMic();
+}
 const MIC_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`;
+const NO_MIC = { blocked: "Microphone access was blocked. Allow it in Settings → Safari → Microphone, or say it out loud and tap below.",
+  missing: "The microphone isn't available here (inside claude.ai it's blocked). Say it out loud, then tap below." };
 function gateHTML(label, text) {
   if (!speakOn()) return "";
-  const g = (sub && sub.gate) || {};
+  const g = gateState("main");
   if (g.done) return `<div class="card gate" style="display:grid;gap:8px">
       <span class="eyebrow">You said</span>
       ${g.url ? `<audio controls src="${g.url}" style="width:100%"></audio>` : `<span class="small muted">Said out loud ✓</span>`}
@@ -1188,35 +1207,56 @@ function gateHTML(label, text) {
   return `<div class="card gate" style="display:grid;gap:10px;justify-items:center;text-align:center">
       <span class="eyebrow">Speak</span>
       <p><b>${esc(label)}</b></p>
-      ${g.noMic ? `<p class="small muted">${esc(g.noMic)}</p><button class="btn block" id="gateSaid">I said it out loud</button>`
-      : `<button class="mic${g.rec ? " on" : ""}" id="gateMic" aria-label="${g.rec ? "Stop recording" : "Start recording"}">${MIC_SVG}</button>
+      ${g.noMic ? `<p class="small muted">${esc(NO_MIC[g.noMic])}</p><button class="btn block" data-gsaid="main">I said it out loud</button>`
+      : `<button class="mic${g.rec ? " on" : ""}" data-gmic="main" aria-label="${g.rec ? "Stop recording" : "Start recording"}">${MIC_SVG}</button>
          <p class="small muted">${g.rec ? "Recording… tap again when you've finished" : "Tap the microphone and say it"}</p>`}</div>`;
 }
+// A compact step for lists: one small microphone per item.
+function miniGate(k, label) {
+  if (!speakOn()) return "";
+  const g = gateState(k);
+  if (g.done) return `<span class="mini-done">✓${g.url ? ` <button class="mini play" data-gplay="${esc(k)}" aria-label="Play what you said for ${esc(label)}">▶</button>` : ""}</span>`;
+  if (g.noMic) return `<button class="mini said" data-gsaid="${esc(k)}">I said it</button>`;
+  return `<button class="mini mic-s${g.rec ? " on" : ""}" data-gmic="${esc(k)}" aria-label="${g.rec ? "Stop recording" : "Say " + esc(label)}">${MIC_SVG}</button>`;
+}
 function wireGate(el, maxMs) {
-  const done = url => { if (!sub) return; sub.gate = { done: true, url }; render(); };
-  const said = $("#gateSaid", el); if (said) said.onclick = () => done(null);
-  const mic = $("#gateMic", el); if (!mic) return;
-  mic.onclick = async () => {
-    const g = sub.gate || (sub.gate = {});
+  const gates = () => sub.gates || (sub.gates = {});
+  const done = (k, url) => { if (!sub) return; gates()[k] = { done: true, url }; render(); };
+  el.querySelectorAll("[data-gsaid]").forEach(b => b.onclick = () => done(b.dataset.gsaid, null));
+  el.querySelectorAll("[data-gplay]").forEach(b => b.onclick = () => { const u = gateState(b.dataset.gplay).url; if (u) new Audio(u).play().catch(() => {}); });
+  el.querySelectorAll("[data-gmic]").forEach(b => b.onclick = async () => {
+    const k = b.dataset.gmic, g = gates()[k] || (gates()[k] = {});
     if (g.rec) { clearTimeout(recTimer); recorder.stop(); return; }
+    // Only one recording at a time: finish any other one first.
+    if (recorder && recorder.state === "recording") { clearTimeout(recTimer); recorder.stop(); }
     try {
       const stream = await getMic(), chunks = [], owner = sub;
       recorder = new MediaRecorder(stream);
       recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
       recorder.onstop = () => {
-        if (sub !== owner || !sub.gate || !sub.gate.rec) return; // the exercise moved on mid-recording
-        done(chunks.length ? URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType || "audio/mp4" })) : null);
+        if (sub !== owner || !sub.gates || !sub.gates[k] || !sub.gates[k].rec) return; // the exercise moved on mid-recording
+        done(k, chunks.length ? URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType || "audio/mp4" })) : null);
       };
       recorder.start();
       g.rec = true; render();
       recTimer = setTimeout(() => { if (recorder.state === "recording") recorder.stop(); }, maxMs || 10000);
     } catch (e) {
-      g.noMic = e && e.name === "NotAllowedError"
-        ? "Microphone access was blocked. Allow it in Settings → Safari → Microphone, or say it out loud and tap below."
-        : "The microphone isn't available here (inside claude.ai it's blocked). Say it out loud, then tap below.";
+      const why = e && e.name === "NotAllowedError" ? "blocked" : "missing";
+      g.noMic = why;
+      if (k !== "main") toast(why === "blocked" ? "Microphone blocked: say it out loud and tap “I said it”" : "No microphone here: say it out loud and tap “I said it”");
       render();
     }
-  };
+  });
+}
+// "Say each form" list for a verb: every distinct form gets its own small microphone.
+const formKey = f => "form:" + f;
+function sayFormsHTML(forms, title) {
+  if (!speakOn() || !forms.length) return "";
+  const left = forms.filter(f => !gateDone(formKey(f))).length;
+  return `<div class="card say-forms" style="display:grid;gap:4px">
+    <div class="row between"><span class="eyebrow">${esc(title)}</span><span class="small ${left ? "muted" : ""}" style="${left ? "" : "color:var(--good);font-weight:700"}">${left ? `${left} to go` : "All said ✓"}</span></div>
+    ${forms.map(f => `<div class="say-row"><span class="say-word">${esc(f)}</span>${miniGate(formKey(f), f)}</div>`).join("")}
+    ${left ? `<p class="small muted">Tap each microphone and say the form out loud.</p>` : ""}</div>`;
 }
 function speakToggleHTML() {
   return `<div class="card row between"><span><b>Speaking required</b><br><span class="small muted">Say each answer out loud before you can move on</span></span>
@@ -1276,7 +1316,9 @@ function viewRoots(el) {
       <p class="small muted">Source: ${srcLink(d.src)}</p>
     </div>`;
   let body;
-  if (sub.mode === "route") body = route;
+  const allForms = [...new Set(d.forms)];
+  const formsSaid = allForms.every(f => gateDone(formKey(f)));
+  if (sub.mode === "route") body = route + sayFormsHTML(allForms, "Say each form out loud");
   else {
     body = `
       <p class="small muted">Tap a row, then tap the form that fits it.</p>
@@ -1288,7 +1330,8 @@ function viewRoots(el) {
       }).join("")}</div>
       ${R.done ? "" : `<div class="pool">${R.pool.map(c => `<button class="chip pool-chip${R.wrong === c.id ? " wrong" : ""}" data-chip="${c.id}" ${c.used ? "hidden" : ""}>${esc(c.t)}</button>`).join("")}</div>`}
       ${R.wrong !== null ? `<div class="feedback no">Not that one for “${esc(d.en[R.active])}”. Look at the affix and try again.</div>` : ""}
-      ${R.done ? `<div class="feedback ok">Tama! Here's how each form is built from <b>${esc(d.root)}</b>.</div>${route}${gateHTML(`Now say all four out loud: ${[...new Set(d.forms)].join(", ")}`, "")}` : ""}`;
+      ${R.done ? `<div class="feedback ok">Tama! Here's how each form is built from <b>${esc(d.root)}</b>.</div>${route}` : ""}
+      ${sayFormsHTML([...new Set(R.slots.filter(Boolean))], "Say each form as you place it")}`;
   }
   el.innerHTML = `
     <button class="back" id="back">‹ Practice</button>
@@ -1298,7 +1341,7 @@ function viewRoots(el) {
       <span class="muted">${esc(d.en[0].replace(/^to /, ""))} · makes <b>${v}</b>, a ${d.group} verb</span></div>
     <div class="chips"><button class="chip" data-mode="match" aria-pressed="${sub.mode === "match"}">Match the forms</button><button class="chip" data-mode="route" aria-pressed="${sub.mode === "route"}">See the route</button></div>
     ${body}
-    <button class="btn block ${R.done || sub.mode === "route" ? "" : "ghost"}" id="nextVerb" ${R.done && sub.mode === "match" && !gateOpen() ? "disabled" : ""}>Next verb</button>`;
+    <button class="btn block ${R.done || sub.mode === "route" ? "" : "ghost"}" id="nextVerb" ${(sub.mode === "route" || R.done) && !formsSaid ? "disabled" : ""}>Next verb</button>`;
   wireGate(el, 20000);
   $("#back", el).onclick = () => { resetGate(); sub = null; render(); };
   el.querySelectorAll("[data-verb]").forEach(b => b.onclick = () => { resetGate(); sub.round = newRoundFor(b.dataset.verb); render(); });
