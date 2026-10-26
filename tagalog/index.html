@@ -202,6 +202,7 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .pool { display: flex; flex-wrap: wrap; gap: 8px; }
 .pool-chip { font-size: 1.05rem; padding: 10px 14px; }
 .pool-chip.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.btn:disabled { opacity: .45; }
 .mic { justify-self: center; width: 96px; height: 96px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; box-shadow: 0 0 0 0 var(--accent-soft); }
 .mic svg { width: 40px; height: 40px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .mic.on { background: var(--bad); }
@@ -818,11 +819,14 @@ function viewStudy(el) {
           ${speakBtn(c[0])}${c[2] ? `<div class="note">${esc(c[2])}</div>` : ""}${c[3] ? `<div class="note small">Source: ${srcLink(c[3])}</div>` : ""}<div class="note small">${hearLinks(c[0])}</div></div>
       </div>
     </div>
+    ${gateHTML(S.dir === "es-en" ? "Read it out loud first" : "Say it in Tagalog first", c[0])}
     <div class="rate" id="rate" hidden>
       ${["Again", "Hard", "Good", "Easy"].map((l, i) => `<button class="${["again", "", "good", ""][i]}" data-g="${i}">${l}<small>${previewIv(c[0], i)}</small></button>`).join("")}
     </div>
-    <button class="btn block ghost" id="showBtn">Show answer</button>`;
+    <button class="btn block ghost" id="showBtn" ${gateOpen() ? "" : "hidden"}>Show answer</button>`;
+  wireGate(el);
   const flip = () => {
+    if (!gateOpen()) return;
     $("#flash", el).classList.add("flipped"); $("#rate", el).hidden = false; $("#showBtn", el).hidden = true;
     if (S.dir === "en-es") say(c[0]);
   };
@@ -833,7 +837,7 @@ function viewStudy(el) {
   $("#back", el).onclick = () => { sub = null; render(); };
   el.querySelectorAll("[data-g]").forEach(b => b.onclick = () => {
     const g = +b.dataset.g;
-    schedule(c[0], g); q.shift(); sub.done++;
+    resetGate(); schedule(c[0], g); q.shift(); sub.done++;
     if (g === 0) q.splice(Math.min(q.length, 3), 0, c);
     addXP(1); render();
   });
@@ -865,15 +869,17 @@ function viewStory(el) {
         const has = S.mine.some(m => m[0] === g[0]);
         return `<div class="gloss-row"><span class="w">${esc(g[0])} <span class="muted" style="font-weight:400">— ${esc(g[1])}</span></span>${speakBtn(g[0])}<button class="add" data-g="${i}" ${has ? "disabled" : ""}>${has ? "Added" : "+ Add"}</button></div>`;
       }).join("")}</div>
-    <div class="card" style="display:grid;gap:14px"><h3>Did you understand?</h3>
+    ${gateHTML("Read the whole story out loud before the questions", "")}
+    ${gateOpen() ? `<div class="card" style="display:grid;gap:14px"><h3>Did you understand?</h3>
       ${s.quiz.map((qq, qi) => `<div style="display:grid;gap:8px"><b>${esc(qq[0])}</b><div class="opts">${qq[1].map((o, oi) => {
         const a = sub.answers[qi];
         const cls = a === undefined ? "" : oi === qq[2] ? "right" : oi === a ? "wrong" : "";
         return `<button class="opt ${cls}" data-q="${qi}" data-o="${oi}" ${a !== undefined ? "disabled" : ""}>${esc(o)}</button>`;
       }).join("")}</div></div>`).join("")}
       <div id="storyResult"></div>
-    </div>`;
-  $("#back", el).onclick = () => { sub = null; render(); };
+    </div>` : ""}`;
+  wireGate(el, 180000);
+  $("#back", el).onclick = () => { resetGate(); sub = null; render(); };
   el.querySelectorAll(".sent").forEach(b => b.onclick = () => { const i = +b.dataset.i; sub.show[i] = !sub.show[i]; say(s.lines[i][0]); render(); });
   $("#toggleAll", el).onclick = () => { const v = !allShown; s.lines.forEach((_, i) => sub.show[i] = v); render(); };
   if ($("#play", el)) $("#play", el).onclick = () => {
@@ -920,7 +926,9 @@ function viewPractice(el) {
       <button class="story-item" data-m="write"><span class="lvl">✎</span><span><h3>Write it</h3><span class="small muted">See English, type the Tagalog</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="verbs"><span class="lvl">-um-</span><span><h3>Verb drill</h3><span class="small muted">Done, doing, will do: 12 everyday verbs</span></span><span class="small muted">›</span></button>
     </div>
+    ${speakToggleHTML()}
     <div class="tip"><span class="eyebrow">How to use this</span><span>Do your flashcards first, then one drill. Ten focused minutes a day beats an hour on Sunday.</span></div>`;
+  wireSpeakToggle(el);
   el.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { sub = { type: b.dataset.m, deck: "all" }; render(); });
 }
 function quizPool(deckId) {
@@ -963,8 +971,10 @@ function viewQuiz(el, listen) {
       const cls = sub.picked === null ? "" : i === it.ans ? "right" : i === sub.picked ? "wrong" : "";
       return `<button class="opt ${cls}" data-o="${i}" ${sub.picked !== null ? "disabled" : ""}>${esc(it.rev ? o[0] : o[1])}</button>`;
     }).join("")}</div>
-    ${sub.picked !== null ? `<div class="card row between"><span><b>${esc(it.c[0])}</b> <span class="muted">— ${esc(it.c[1])}</span></span>${speakBtn(it.c[0])}</div><button class="btn block" id="next">Next</button>` : ""}`;
-  $("#back", el).onclick = back;
+    ${sub.picked !== null ? `<div class="card row between"><span><b>${esc(it.c[0])}</b> <span class="muted">— ${esc(it.c[1])}</span></span>${speakBtn(it.c[0])}</div>
+      ${gateHTML(`Now say it: ${it.c[0]}`, it.c[0])}<button class="btn block" id="next" ${gateOpen() ? "" : "disabled"}>Next</button>` : ""}`;
+  wireGate(el);
+  $("#back", el).onclick = () => { resetGate(); back(); };
   if (listen) {
     $("#replay", el).onclick = () => say(it.c[0]);
     $("#slow", el).onclick = () => say(it.c[0], 0.6);
@@ -977,7 +987,7 @@ function viewQuiz(el, listen) {
     if (!listen) say(it.c[0]);
     render();
   });
-  const n = $("#next", el); if (n) n.onclick = () => { sub.i++; sub.picked = null; render(); };
+  const n = $("#next", el); if (n) n.onclick = () => { resetGate(); sub.i++; sub.picked = null; render(); };
 }
 
 function accentRow() { return ""; }
@@ -1011,8 +1021,10 @@ function viewWrite(el) {
       ${sub.result ? "" : `<div class="row"><button class="btn" type="submit">Check</button><button class="btn ghost" type="button" id="skip">I don't know</button></div>`}
     </form>
     ${sub.result ? `<div class="feedback ${sub.result === "wrong" ? "no" : "ok"}">${sub.result === "exact" ? "Tama!" : sub.result === "accent" ? "Right! Exact spelling:" : "Not quite. The answer:"} ${esc(c[0])}</div>
-      <div class="row">${speakBtn(c[0])}<button class="btn" id="next" style="flex:1">Next</button></div>` : ""}`;
-  $("#back", el).onclick = back;
+      ${gateHTML(`Now say it: ${c[0]}`, c[0])}
+      <div class="row">${speakBtn(c[0])}<button class="btn" id="next" style="flex:1" ${gateOpen() ? "" : "disabled"}>Next</button></div>` : ""}`;
+  wireGate(el);
+  $("#back", el).onclick = () => { resetGate(); back(); };
   wireAccents(el);
   const inp = $("#wIn", el); if (sub.result) inp.value = sub.given || ""; else inp.focus();
   $("#wf", el).onsubmit = e => {
@@ -1021,7 +1033,7 @@ function viewWrite(el) {
     if (sub.result !== "wrong") { sub.score++; addXP(4); } say(c[0]); render();
   };
   const sk = $("#skip", el); if (sk) sk.onclick = () => { sub.given = ""; sub.result = "wrong"; say(c[0]); render(); };
-  const n = $("#next", el); if (n) n.onclick = () => { sub.i++; sub.result = null; render(); };
+  const n = $("#next", el); if (n) n.onclick = () => { resetGate(); sub.i++; sub.result = null; render(); };
 }
 
 function viewVerbs(el) {
@@ -1049,7 +1061,9 @@ function viewVerbs(el) {
       </form>
       ${sub.result ? `<div class="feedback ${sub.result === "wrong" ? "no" : "ok"}">${sub.result === "exact" ? "Tama!" : sub.result === "accent" ? "Right! Exact spelling:" : "The answer is"} ${ans}</div>
         <div class="card">${table(v, a)}${VERBS[v].note ? `<p class="small muted" style="margin-top:8px">${esc(VERBS[v].note)}</p>` : ""}<p class="small muted" style="margin-top:6px">Source: ${srcLink(VERBS[v].src)}</p>${formLinks(v)}</div>
-        <button class="btn block" id="next">Next verb</button>` : ""}`;
+        ${gateHTML(`Now say it: ${ans}`, ans)}
+        <button class="btn block" id="next" ${gateOpen() ? "" : "disabled"}>Next verb</button>` : ""}`;
+    wireGate(el);
     const inp = $("#vIn", el); if (sub.result) inp.value = sub.given || ""; else inp.focus();
     $("#vf", el).onsubmit = e => {
       e.preventDefault(); if (sub.result || !inp.value.trim()) return;
@@ -1057,7 +1071,7 @@ function viewVerbs(el) {
       if (sub.result !== "wrong") { sub.score = (sub.score || 0) + 1; addXP(2); }
       say(ans); render();
     };
-    const n = $("#next", el); if (n) n.onclick = () => { sub.q = null; render(); };
+    const n = $("#next", el); if (n) n.onclick = () => { resetGate(); sub.q = null; render(); };
   }
   $("#back", el).onclick = back;
   el.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { sub.mode = b.dataset.v; render(); });
@@ -1156,6 +1170,60 @@ function viewSpeak(el) {
   const retry = $("#retry", el); if (retry) retry.onclick = () => { if (S.cards[c[0]]) { S.cards[c[0]].due = Date.now(); save(); } if (sub.url) { URL.revokeObjectURL(sub.url); sub.url = null; } sub.tries++; sub.state = "prompt"; render(); };
 }
 
+/* ================= SPEAKING STEP (built into every exercise) ================= */
+// Each exercise asks the learner to say the Tagalog out loud before moving on. The step records them
+// and plays it back beside native audio; where the microphone is blocked, they say it and tap instead.
+// The state lives on the current exercise (sub.gate) and is cleared whenever the item changes.
+const speakOn = () => S.speakReq !== false;
+const gateOpen = () => !speakOn() || !!(sub && sub.gate && sub.gate.done);
+function resetGate() { if (sub && sub.gate && sub.gate.url) URL.revokeObjectURL(sub.gate.url); if (sub) sub.gate = null; releaseMic(); }
+const MIC_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`;
+function gateHTML(label, text) {
+  if (!speakOn()) return "";
+  const g = (sub && sub.gate) || {};
+  if (g.done) return `<div class="card gate" style="display:grid;gap:8px">
+      <span class="eyebrow">You said</span>
+      ${g.url ? `<audio controls src="${g.url}" style="width:100%"></audio>` : `<span class="small muted">Said out loud ✓</span>`}
+      ${text ? `<span class="small">Compare: ${hearLinks(text)}</span>` : ""}</div>`;
+  return `<div class="card gate" style="display:grid;gap:10px;justify-items:center;text-align:center">
+      <span class="eyebrow">Speak</span>
+      <p><b>${esc(label)}</b></p>
+      ${g.noMic ? `<p class="small muted">${esc(g.noMic)}</p><button class="btn block" id="gateSaid">I said it out loud</button>`
+      : `<button class="mic${g.rec ? " on" : ""}" id="gateMic" aria-label="${g.rec ? "Stop recording" : "Start recording"}">${MIC_SVG}</button>
+         <p class="small muted">${g.rec ? "Recording… tap again when you've finished" : "Tap the microphone and say it"}</p>`}</div>`;
+}
+function wireGate(el, maxMs) {
+  const done = url => { if (!sub) return; sub.gate = { done: true, url }; render(); };
+  const said = $("#gateSaid", el); if (said) said.onclick = () => done(null);
+  const mic = $("#gateMic", el); if (!mic) return;
+  mic.onclick = async () => {
+    const g = sub.gate || (sub.gate = {});
+    if (g.rec) { clearTimeout(recTimer); recorder.stop(); return; }
+    try {
+      const stream = await getMic(), chunks = [], owner = sub;
+      recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        if (sub !== owner || !sub.gate || !sub.gate.rec) return; // the exercise moved on mid-recording
+        done(chunks.length ? URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType || "audio/mp4" })) : null);
+      };
+      recorder.start();
+      g.rec = true; render();
+      recTimer = setTimeout(() => { if (recorder.state === "recording") recorder.stop(); }, maxMs || 10000);
+    } catch (e) {
+      g.noMic = e && e.name === "NotAllowedError"
+        ? "Microphone access was blocked. Allow it in Settings → Safari → Microphone, or say it out loud and tap below."
+        : "The microphone isn't available here (inside claude.ai it's blocked). Say it out loud, then tap below.";
+      render();
+    }
+  };
+}
+function speakToggleHTML() {
+  return `<div class="card row between"><span><b>Speaking required</b><br><span class="small muted">Say each answer out loud before you can move on</span></span>
+    <button class="chip" id="speakReq" aria-pressed="${speakOn()}">${speakOn() ? "On" : "Off"}</button></div>`;
+}
+function wireSpeakToggle(el) { const b = $("#speakReq", el); if (b) b.onclick = () => { S.speakReq = !speakOn(); save(); render(); }; }
+
 /* ================= ROOT BUILDER ================= */
 // Each form split into parts: [affix], {copied syllable}, (sound change). Checked against VERBS on load.
 const ROUTES = {
@@ -1220,7 +1288,7 @@ function viewRoots(el) {
       }).join("")}</div>
       ${R.done ? "" : `<div class="pool">${R.pool.map(c => `<button class="chip pool-chip${R.wrong === c.id ? " wrong" : ""}" data-chip="${c.id}" ${c.used ? "hidden" : ""}>${esc(c.t)}</button>`).join("")}</div>`}
       ${R.wrong !== null ? `<div class="feedback no">Not that one for “${esc(d.en[R.active])}”. Look at the affix and try again.</div>` : ""}
-      ${R.done ? `<div class="feedback ok">Tama! Here's how each form is built from <b>${esc(d.root)}</b>.</div>${route}` : ""}`;
+      ${R.done ? `<div class="feedback ok">Tama! Here's how each form is built from <b>${esc(d.root)}</b>.</div>${route}${gateHTML(`Now say all four out loud: ${[...new Set(d.forms)].join(", ")}`, "")}` : ""}`;
   }
   el.innerHTML = `
     <button class="back" id="back">‹ Practice</button>
@@ -1230,11 +1298,12 @@ function viewRoots(el) {
       <span class="muted">${esc(d.en[0].replace(/^to /, ""))} · makes <b>${v}</b>, a ${d.group} verb</span></div>
     <div class="chips"><button class="chip" data-mode="match" aria-pressed="${sub.mode === "match"}">Match the forms</button><button class="chip" data-mode="route" aria-pressed="${sub.mode === "route"}">See the route</button></div>
     ${body}
-    <button class="btn block ${R.done || sub.mode === "route" ? "" : "ghost"}" id="nextVerb">Next verb</button>`;
-  $("#back", el).onclick = () => { sub = null; render(); };
-  el.querySelectorAll("[data-verb]").forEach(b => b.onclick = () => { sub.round = newRoundFor(b.dataset.verb); render(); });
+    <button class="btn block ${R.done || sub.mode === "route" ? "" : "ghost"}" id="nextVerb" ${R.done && sub.mode === "match" && !gateOpen() ? "disabled" : ""}>Next verb</button>`;
+  wireGate(el, 20000);
+  $("#back", el).onclick = () => { resetGate(); sub = null; render(); };
+  el.querySelectorAll("[data-verb]").forEach(b => b.onclick = () => { resetGate(); sub.round = newRoundFor(b.dataset.verb); render(); });
   el.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { sub.mode = b.dataset.mode; render(); });
-  $("#nextVerb", el).onclick = () => { const others = names.filter(n => n !== v); sub.round = newRoundFor(others[Math.floor(Math.random() * others.length)]); sub.mode = "match"; render(); window.scrollTo(0, 0); };
+  $("#nextVerb", el).onclick = () => { resetGate(); const others = names.filter(n => n !== v); sub.round = newRoundFor(others[Math.floor(Math.random() * others.length)]); sub.mode = "match"; render(); window.scrollTo(0, 0); };
   el.querySelectorAll("[data-slot]").forEach(b => b.onclick = () => { R.active = +b.dataset.slot; R.wrong = null; render(); });
   el.querySelectorAll("[data-chip]").forEach(b => b.onclick = () => {
     const c = R.pool.find(x => x.id === +b.dataset.chip);
