@@ -68,7 +68,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 /* tab bar */
 nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
 nav.tabs button { background: none; border: 0; display: grid; justify-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; font-size: 0.72rem; font-weight: 700; color: var(--muted); }
 nav.tabs button svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -168,14 +168,6 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .phrase .txt b { display: block; font-size: 1.05rem; }
 .phrase .txt span { color: var(--muted); font-size: 0.92rem; }
 
-/* chat */
-.chat { display: grid; gap: 10px; }
-.msg { max-width: 88%; padding: 10px 14px; border-radius: 16px; display: grid; gap: 6px; }
-.msg.bot { background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
-.msg.me { background: var(--accent); color: var(--accent-ink); justify-self: end; border-bottom-right-radius: 4px; }
-.msg .tr { font-size: 0.88rem; color: var(--muted); font-style: italic; }
-.msg .fix { font-size: 0.88rem; background: var(--sun-soft); border-radius: 8px; padding: 6px 8px; }
-.composer { display: flex; gap: 8px; }
 .rp-affix { color: var(--accent); font-weight: 800; }
 .rp-copy { background: var(--sun-soft); border-radius: 4px; padding: 0 1px; }
 .rp-change { text-decoration: underline wavy var(--bad); text-underline-offset: 3px; }
@@ -222,7 +214,6 @@ details summary { cursor: pointer; }
   <button data-tab="cards"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/></svg>Salita</button>
   <button data-tab="stories"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>Kuwento</button>
   <button data-tab="practice"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Praktis</button>
-  <button data-tab="talk"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>Usap</button>
 </nav>
 
 <script>
@@ -468,21 +459,13 @@ const TIPS = [
   ["Taglish is normal", "Filipinos mix English into Tagalog all the time: 'Ano work mo?', 'Walang ice', 'Yung bill po'. You don't have to avoid English words."]
 ];
 
-const SCENARIOS = [
-  { id: "sari", name: "Buy at a sari-sari store", role: "a friendly shopkeeper (tindera) at a sari-sari store in Quezon City", open: "Magandang umaga! Ano po ang bibilhin ninyo?", openEn: "Good morning! What would you like to buy?" },
-  { id: "jeep", name: "Ride a jeepney", role: "a jeepney driver in Manila, with a helpful passenger who chimes in", open: "Sakay na! Saan ka bababa?", openEn: "Get on! Where are you getting off?" },
-  { id: "karinderya", name: "Eat at a karinderya", role: "the cook at a small karinderya (local eatery) in Cebu", open: "Magandang tanghali po! Kain na po kayo. Ano po ang gusto ninyo?", openEn: "Good midday! Come and eat. What would you like?" },
-  { id: "lola", name: "Meet the family", role: "a warm Filipino grandmother (lola) meeting her grandchild's foreign friend for the first time", open: "Ay, ikaw pala ang kaibigan ni Mia! Halika, pasok ka. Kumain ka na ba?", openEn: "Oh, so you're Mia's friend! Come in. Have you eaten?" },
-  { id: "doctor", name: "See a doctor", role: "a kind doctor at a clinic in Davao", open: "Magandang umaga po. Ano po ang nararamdaman ninyo?", openEn: "Good morning. What are you feeling?" },
-  { id: "free", name: "Free chat", role: "a patient Tagalog tutor who chats about everyday life", open: "Kumusta! Ano ang ginawa mo ngayong araw?", openEn: "Hi! What did you do today?" }
-];
 
 function srcLink(k) { const s = SRC[k]; return s ? `<a href="${s[1]}" target="_blank" rel="noopener">${esc(s[0])}</a>` : ""; }
 
 function sourcesCard() {
   const used = Object.keys(SRC);
   return `<details class="card"><summary><b>Sources</b> <span class="small muted">· ${used.length} references</span></summary>
-    <p class="small muted" style="margin-block:8px">Every flashcard and verb form was checked against one of these and names it on the card. Phrases I couldn't confirm were left out. The stories are original practice texts built from the checked phrases, and the chat partner is AI, so neither comes from a published source.</p>
+    <p class="small muted" style="margin-block:8px">Every flashcard and verb form was checked against one of these and names it on the card. Phrases I couldn't confirm were left out. The stories are original practice texts built from the checked phrases, so they don't come from a published source.</p>
     <ul class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">${used.map(k => `<li>${srcLink(k)}</li>`).join("")}</ul></details>`;
 }
 /* ================= STATE ================= */
@@ -640,7 +623,7 @@ function addMine(es, en) {
 let tab = "home";
 function go(t) {
   tab = t;
-  stopSpeaking();
+  try { speechSynthesis.cancel(); } catch (e) {}
   document.querySelectorAll("nav.tabs button").forEach(b => { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   render();
   window.scrollTo(0, 0);
@@ -650,7 +633,7 @@ let sub = null; // per-tab sub-view
 function render() {
   updatePills();
   const v = $("#view");
-  const views = { home: viewHome, cards: viewCards, stories: viewStories, practice: viewPractice, talk: viewTalk };
+  const views = { home: viewHome, cards: viewCards, stories: viewStories, practice: viewPractice };
   v.innerHTML = "";
   const sec = document.createElement("section");
   v.appendChild(sec);
@@ -685,7 +668,7 @@ function viewHome(el) {
     </div>
     <div class="grid2">
       <button class="action" data-go="stories"><span class="eyebrow">Read</span><b>Short stories</b><span class="small muted">${S.storiesDone.length} of ${STORIES.length} finished</span></button>
-      <button class="action" data-go="talk"><span class="eyebrow">Speak</span><b>Role-play chat</b><span class="small muted">Store, jeepney, family…</span></button>
+      <button class="action" data-go="practice" data-mode="quiz"><span class="eyebrow">Review</span><b>Quick quiz</b><span class="small muted">10 questions, both directions</span></button>
       ${voice ? `<button class="action" data-go="practice" data-mode="listen"><span class="eyebrow">Listen</span><b>Ear training</b><span class="small muted">Hear it, pick the meaning</span></button>` : `<button class="action" data-go="practice" data-mode="write"><span class="eyebrow">Write</span><b>Write it</b><span class="small muted">See English, type Tagalog</span></button>`}
       <button class="action" data-go="practice" data-mode="roots"><span class="eyebrow">Grammar</span><b>Root builder</b><span class="small muted">See how verbs grow from a root</span></button>
     </div>
@@ -698,7 +681,7 @@ function viewHome(el) {
       <label for="goalSel" class="small">Daily goal</label>
       <select id="goalSel" style="width:auto">${[15, 30, 50, 80].map(g => `<option value="${g}" ${g === S.goal ? "selected" : ""}>${g} pts · ${{ 15: "casual", 30: "regular", 50: "serious", 80: "intense" }[g]}</option>`).join("")}</select>
     </div>
-    ${hearCard()}${sourcesCard()}${voiceNote()}<p class="small muted">${progressDoc ? "Progress is saved to your account." : "Progress is saved on this device."} Points: 1 per card, 2 per right answer, 10 per story, 3 per chat message.</p>`;
+    ${hearCard()}${sourcesCard()}${voiceNote()}<p class="small muted">${progressDoc ? "Progress is saved to your account." : "Progress is saved on this device."} Points: 1 per card, 2 per right answer, 10 per story.</p>`;
   $("#startToday", el).onclick = () => { sub = { type: "study", deck: "all" }; go("cards"); };
   el.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { sub = b.dataset.mode ? { type: b.dataset.mode } : null; go(b.dataset.go); });
   $("#goalSel", el).onchange = e => { S.goal = +e.target.value; save(); render(); };
@@ -1053,28 +1036,6 @@ function viewVerbs(el) {
   el.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { sub.mode = b.dataset.v; render(); });
 }
 
-const COACH = {
-  key: "tarausap", code: "tl", langName: "Tagalog",
-  voiceTest: l => /^(fil|tl|id|ms)\b/i.test(l),
-  voiceBonus: v => /^(fil|tl)\b/i.test(v.lang || "") ? 10 : 0,
-  topics: [
-    ["-um- verbs: done, doing, will do", "kumain, kumakain, kakain: where -um- goes, and copying the first syllable of the root."],
-    ["Roots that start with a vowel", "umalis, umaalis, aalis and uminom, umiinom, iinom: um- goes in front and the vowel is copied."],
-    ["mag- verbs", "magtrabaho → nagtrabaho, nagtatrabaho, magtatrabaho: mag- becomes nag- for done and ongoing."],
-    ["ma- verbs", "maligo → naligo, naliligo, maliligo."],
-    ["-in verbs: focus on the thing", "kainin → kinain, kinakain, kakainin, compared with kumain."],
-    ["When d becomes r", "dumating → dumarating, darating."]
-  ],
-  rules: "Teach Tagalog aspect (completed, ongoing, contemplated) rather than English tenses. Model polite speech with po where a teacher naturally would.",
-  strict: "These forms were checked against published sources. Use ONLY the verbs and forms in this table and never invent other verb forms. If the learner asks about a verb that isn't listed, say it isn't in your checked list yet.",
-  reference: () => Object.entries(VERBS).map(([v, d]) => `${v} (root ${d.root}, ${d.group}): infinitive ${d.forms[0]} (${d.en[0]}); completed ${d.forms[1]} (${d.en[1]}); ongoing ${d.forms[2]} (${d.en[2]}); contemplated ${d.forms[3]} (${d.en[3]})`).join("\n"),
-  voiceHelp: "Phones rarely include a Filipino voice. On Android, install Filipino under Settings → Text-to-speech → Google → Install voice data. Without one, Tagalog words aren't read aloud, so tap them to hear a native speaker. If you'd rather hear something, you can turn on a stand-in Indonesian voice, which is close but not native.",
-  noVoice: "Only the English parts will be spoken on this device.",
-  testEn: "Hi! I'm your verb coach. Here's how a Tagalog verb sounds:",
-  testTarget: "kumain, kumakain, kakain.",
-  claudePrompt: "Be my Tagalog teacher in voice mode. Teach me Tagalog verb aspects one small step at a time, starting with -um- verbs like kumain, kumakain, kakain. Explain each pattern, say examples slowly with their English meanings, then quiz me and correct my answers. Keep each turn short."
-};
-
 /* ================= ROOT BUILDER ================= */
 // Each form split into parts: [affix], {copied syllable}, (sound change). Checked against VERBS on load.
 const ROUTES = {
@@ -1163,242 +1124,6 @@ function viewRoots(el) {
     if (next === -1) { R.done = true; addXP(3); } else R.active = next;
     render();
   });
-}
-
-/* ================= VERB COACH (AI teacher, spoken) ================= */
-let vpref = {};
-try { vpref = JSON.parse(localStorage.getItem(COACH.key + ".voices") || "{}"); } catch (e) {}
-function saveVpref() { try { localStorage.setItem(COACH.key + ".voices", JSON.stringify(vpref)); } catch (e) {} }
-function allVoices() { try { return speechSynthesis.getVoices(); } catch (e) { return []; } }
-// Phones ship several voices per language; the "Enhanced"/"Premium"/neural ones sound far more human.
-function voiceScore(v) {
-  let s = 0;
-  if (/enhanced|premium|natural|neural/i.test(v.name)) s += 4;
-  if (/google|siri/i.test(v.name)) s += 2;
-  if (v.localService === false) s += 1;
-  return s + (COACH.voiceBonus ? COACH.voiceBonus(v) : 0);
-}
-function voicesFor(kind) { return allVoices().filter(v => kind === "en" ? /^en/i.test(v.lang || "") : COACH.voiceTest(v.lang || "")); }
-function coachVoice(kind) {
-  if (kind !== "en" && !voice) return null;
-  const vs = voicesFor(kind), pref = kind === "en" ? vpref.en : vpref.target;
-  return vs.find(v => v.name === pref) || vs.sort((a, b) => voiceScore(b) - voiceScore(a))[0] || null;
-}
-let coachRun = 0;
-function stopSpeaking() { coachRun++; try { speechSynthesis.cancel(); } catch (e) {} }
-function speakSegments(segs, onSeg, onDone) {
-  const run = ++coachRun;
-  try { speechSynthesis.cancel(); } catch (e) {}
-  let i = 0;
-  const next = () => {
-    if (run !== coachRun) return;
-    if (i >= segs.length) { onSeg(-1); if (onDone) onDone(); return; }
-    const sg = segs[i], en = sg.lang === "en", v = coachVoice(en ? "en" : "target");
-    onSeg(i);
-    if (!v) { i++; next(); return; }
-    try {
-      const u = new SpeechSynthesisUtterance(String(sg.text).replace(/[—«»…*_#]/g, " "));
-      u.voice = v; u.lang = v.lang; u.rate = (vpref.rate || 1) * (en ? 0.98 : 0.85);
-      u.onend = () => { i++; setTimeout(next, en ? 120 : 320); };
-      u.onerror = () => { i++; next(); };
-      speechSynthesis.speak(u);
-    } catch (e) { i++; next(); }
-  };
-  next();
-}
-
-const coach = { topic: null, log: [], busy: false, err: null, draft: "" };
-function coachHear(segs) {
-  const tl = [...new Set(segs.filter(s => s.lang !== "en").map(s => cleanTl(s.text)).filter(Boolean))];
-  return tl.length ? `<span class="hear">Hear the Tagalog: ${tl.map(t => `<a ${EXT} href="${t.includes(" ") ? gtUrl(t) : forvoUrl(t)}">${esc(t)}</a>`).join(" · ")}</span>` : "";
-}
-function segHTML(segs, mi) {
-  return segs.map((s, i) => {
-    if (s.lang === "en") return `<span class="seg" data-m="${mi}" data-seg="${i}">${esc(s.text)}</span>`;
-    const t = cleanTl(s.text);
-    return `<a class="seg seg-t" ${EXT} href="${t.includes(" ") ? gtUrl(t) : forvoUrl(t)}" data-m="${mi}" data-seg="${i}">${esc(s.text)}</a>`;
-  }).join(" ");
-}
-function playCoach(mi) {
-  const m = coach.log[mi]; if (!m || m.role !== "coach") return;
-  speakSegments(m.segs, i => {
-    document.querySelectorAll(".seg.now").forEach(x => x.classList.remove("now"));
-    const sp = document.querySelector(`.seg[data-m="${mi}"][data-seg="${i}"]`); if (sp) sp.classList.add("now");
-  });
-}
-async function coachTurn(userText) {
-  coach.busy = true; coach.err = null; render();
-  const sample = await getSample();
-  if (!sample) { coach.busy = false; coach.err = "The coach needs the Claude app or claude.ai, signed in."; render(); return; }
-  const transcript = coach.log.map(m => m.role === "coach" ? "Teacher: " + m.segs.map(s => s.text).join(" ") : "Learner: " + m.text).join("\n");
-  const prompt = `You are a warm, expert ${COACH.langName} teacher giving a spoken lesson to an English speaker, entirely about verb patterns.
-Lesson topic: ${coach.topic[0]}. ${coach.topic[1]}
-Learner level: ${S.level || "A1 beginner"}.
-This lesson is VOICE-FIRST: every word is read aloud by text-to-speech. Talk the way a teacher talks: short, friendly sentences; no lists, tables, symbols, slashes or markdown.
-Teach one small step per turn: name the pattern, give one or two examples, and always give the English meaning of each example. Then ask the learner ONE quick question to answer out loud (for example, "How would you say 'we eat'?").
-When the learner answers, say clearly whether it is right, give the correct form, explain the pattern behind it in one sentence, then move to the next step. Reuse the pattern on new verbs so the learner feels it working. If the learner says they don't know, teach it again more simply.
-${COACH.rules}
-${voice ? "" : "The learner's phone cannot pronounce Tagalog, so Tagalog segments are SHOWN on screen, not spoken, and the learner taps them to hear a native speaker. In English segments, refer to them naturally (for example: \"the word on your screen means is eating\"). Never respell Tagalog words in English letters.\n"}Reference forms. ${COACH.strict}
-${COACH.reference()}
-Return ONLY JSON: {"segments":[{"lang":"en","text":"..."},{"lang":"${COACH.code}","text":"..."}]}
-Put every ${COACH.langName} word or phrase in its own "${COACH.code}" segment so a native ${COACH.langName} voice says it; English goes in "en" segments. Keep the whole turn under 70 words.
-
-Conversation so far:
-${transcript || "(none)"}
-Learner: ${userText}`;
-  try {
-    const r = await sample.json(prompt, { cache: false });
-    const segs = (r && Array.isArray(r.segments) ? r.segments : []).filter(s => s && s.text).map(s => ({ lang: s.lang === "en" ? "en" : COACH.code, text: String(s.text) }));
-    if (!segs.length) throw new Error("empty");
-    coach.log.push({ role: "coach", segs });
-    addXP(3);
-    coach.busy = false;
-    if (sub && sub.type === "coach") { render(); window.scrollTo(0, document.body.scrollHeight); playCoach(coach.log.length - 1); }
-    return;
-  } catch (err) {
-    if (userText !== "(Start the lesson.)") { coach.log.pop(); coach.draft = userText; }
-    coach.err = err && err.code === "not_granted" ? "The coach wasn't allowed. You can turn it on from this page's permissions." : err && err.code === "rate_limited" ? "Too many requests at once. Wait a minute and try again." : "Couldn't reach the coach. Check your connection and try again.";
-  }
-  coach.busy = false;
-  if (sub && sub.type === "coach") render();
-}
-function voiceOptions(kind) {
-  const vs = voicesFor(kind).sort((a, b) => voiceScore(b) - voiceScore(a)), cur = coachVoice(kind);
-  if (!vs.length) return `<option>None on this device</option>`;
-  return vs.map(v => `<option value="${esc(v.name)}" ${cur && cur.name === v.name ? "selected" : ""}>${esc(v.name)} (${esc(v.lang)})${/enhanced|premium|natural|neural/i.test(v.name) ? " ★" : ""}</option>`).join("");
-}
-function viewCoach(el) {
-  const back = () => { stopSpeaking(); sub = null; render(); };
-  if (!coach.topic) {
-    const tv = coachVoice("target");
-    el.innerHTML = `
-      <button class="back" id="back">‹ Practice</button>
-      <div><span class="eyebrow">AI mode</span><h1>Verb coach</h1></div>
-      <p class="muted">An AI teacher explains verb patterns out loud, step by step, with meanings. Tagalog words are highlighted: tap one to hear a native speaker. Then it asks you a question. Answer by typing, or tap the microphone on your phone's keyboard and say it.</p>
-      <div class="story-list">${COACH.topics.map((t, i) => `<button class="story-item" data-topic="${i}"><span class="lvl">${i + 1}</span><span><h3>${esc(t[0])}</h3><span class="small muted">${esc(t[1])}</span></span><span class="small muted">›</span></button>`).join("")}</div>
-      <div class="card" style="display:grid;gap:10px">
-        <h3>Voices</h3>
-        <label class="small" for="vTarget">${COACH.langName} voice</label><select id="vTarget">${voiceOptions("target")}</select>
-        <label class="small" for="vEn">English voice</label><select id="vEn">${voiceOptions("en")}</select>
-        <label class="small" for="vRate">Speed</label>
-        <select id="vRate">${[[0.8, "Slow"], [1, "Normal"], [1.15, "Fast"]].map(([r, l]) => `<option value="${r}" ${(vpref.rate || 1) === r ? "selected" : ""}>${l}</option>`).join("")}</select>
-        <button class="btn ghost" id="vTest">▶ Test voices</button>
-        <p class="small muted">★ marks the most natural-sounding voices. ${COACH.voiceHelp}${tv ? "" : " " + COACH.noVoice}</p>${standInToggle()}
-      </div>
-      <div class="tip"><span class="eyebrow">Want a full voice conversation?</span>
-        <span>In the Claude app, tap the voice button, then say or paste this. Claude listens and answers out loud with a natural voice.</span>
-        <span class="small" id="cPrompt" style="font-style:italic">${esc(COACH.claudePrompt)}</span>
-        <button class="btn ghost" id="cCopy">Copy prompt</button></div>`;
-    $("#back", el).onclick = back;
-    el.querySelectorAll("[data-topic]").forEach(b => b.onclick = () => { coach.topic = COACH.topics[+b.dataset.topic]; coach.log = []; coach.err = null; coachTurn("(Start the lesson.)"); });
-    $("#vTarget", el).onchange = e => { vpref.target = e.target.value; saveVpref(); };
-    $("#vEn", el).onchange = e => { vpref.en = e.target.value; saveVpref(); };
-    $("#vRate", el).onchange = e => { vpref.rate = +e.target.value; saveVpref(); };
-    $("#vTest", el).onclick = () => speakSegments([{ lang: "en", text: COACH.testEn }, { lang: COACH.code, text: COACH.testTarget }], () => {});
-    $("#cCopy", el).onclick = () => {
-      const done = () => toast("Prompt copied");
-      try { navigator.clipboard.writeText(COACH.claudePrompt).then(done, () => selectPrompt()); } catch (e) { selectPrompt(); }
-    };
-    const selectPrompt = () => { const r = document.createRange(); r.selectNodeContents($("#cPrompt")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Tap Copy."); };
-    return;
-  }
-  const last = coach.log.length - 1;
-  el.innerHTML = `
-    <div class="row between"><button class="back" id="back">‹ Topics</button><span class="small muted">AI-generated lesson</span></div>
-    <div><span class="eyebrow">Verb coach · ${esc(S.level || "A1 beginner")}</span><h2>${esc(coach.topic[0])}</h2></div>
-    <p class="small muted">${voice ? "" : "Your phone voice reads the English. "}Tap a highlighted Tagalog word to hear a native speaker${voice ? "" : " say it"}.</p>
-    <div class="chat">${coach.log.map((m, i) => m.role === "coach"
-      ? `<div class="msg bot"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:8px"><span style="flex:1;min-width:0">${segHTML(m.segs, i)}</span><button class="speak" data-play="${i}" aria-label="Play again">${SPK}</button></div></div>`
-      : `<div class="msg me">${esc(m.text)}</div>`).join("")}
-      ${coach.busy ? `<div class="msg bot"><span class="muted">Thinking…</span></div>` : ""}
-      ${coach.err ? `<div class="feedback no">${esc(coach.err)}</div>` : ""}
-    </div>
-    <div class="chips"><button class="chip" data-q="I don't know">I don't know</button><button class="chip" data-q="Please explain that again more simply.">Explain again</button><button class="chip" data-q="Got it. Next step, please.">Next step</button><button class="chip" id="stop">■ Stop voice</button></div>
-    <form class="composer" id="kf"><input type="text" id="kIn" autocomplete="off" enterkeyhint="send" placeholder="Answer, or tap 🎤 on your keyboard…" ${coach.busy ? "disabled" : ""}><button class="btn" type="submit" ${coach.busy ? "disabled" : ""}>Send</button></form>`;
-  $("#back", el).onclick = () => { stopSpeaking(); coach.topic = null; render(); };
-  el.querySelectorAll("[data-play]").forEach(b => b.onclick = () => playCoach(+b.dataset.play));
-  $("#stop", el).onclick = stopSpeaking;
-  const inp = $("#kIn", el);
-  inp.value = coach.draft || "";
-  inp.oninput = () => coach.draft = inp.value;
-  const send = t => { if (!t || coach.busy) return; stopSpeaking(); coach.log.push({ role: "me", text: t }); coach.draft = ""; coachTurn(t); };
-  el.querySelectorAll("[data-q]").forEach(b => b.onclick = () => send(b.dataset.q));
-  $("#kf", el).onsubmit = e => { e.preventDefault(); send(inp.value.trim()); };
-  if (last < 0 && !coach.busy && !coach.err) coachTurn("(Start the lesson.)");
-}
-
-/* ================= TALK (role-play with Claude) ================= */
-let samplePromise = null;
-function getSample() { if (!samplePromise) samplePromise = window.claude?.use ? claude.use("sample") : Promise.resolve(null); return samplePromise; }
-const chats = {};
-function viewTalk(el) {
-  if (!sub || sub.type !== "chat") {
-    el.innerHTML = `
-      <h1>Usap</h1>
-      <p class="muted">Role-play real situations with an AI partner. Its replies are AI-generated, not checked against a source. It answers in simple Tagalog, gives you the English, and gently corrects your mistakes.</p>
-      <div class="tip"><span class="eyebrow">Want a real person?</span><span>Practice the same situations with a Filipino tutor: <a ${EXT} href="${ITALKI}">italki</a> · <a ${EXT} href="${PREPLY}">Preply</a></span></div>
-      <div class="card row between"><label for="lvl" class="small">Your level</label>
-        <select id="lvl" style="width:auto">${["A1 beginner", "A2 elementary", "B1 intermediate"].map(l => `<option ${S.level === l ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-      <div class="story-list">${SCENARIOS.map(s => `<button class="story-item" data-sc="${s.id}"><span class="lvl">${{ sari: "🏪", jeep: "🛺", karinderya: "🍲", lola: "👵", doctor: "🩺", free: "💬" }[s.id]}</span>
-        <span><h3>${esc(s.name)}</h3><span class="small muted">${esc(s.open)}</span></span><span class="small muted">›</span></button>`).join("")}</div>
-      <p class="small muted">Tip: it's fine to mix in English when you're stuck. Your partner will show you how to say it in Spanish.</p>`;
-    $("#lvl", el).onchange = e => { S.level = e.target.value; save(); };
-    el.querySelectorAll("[data-sc]").forEach(b => b.onclick = () => {
-      const sc = SCENARIOS.find(s => s.id === b.dataset.sc);
-      if (!chats[sc.id]) chats[sc.id] = [{ role: "bot", es: sc.open, en: sc.openEn }];
-      sub = { type: "chat", sc: sc.id }; render();
-    });
-    return;
-  }
-  const sc = SCENARIOS.find(s => s.id === sub.sc);
-  const log = chats[sc.id];
-  el.innerHTML = `
-    <div class="row between"><button class="back" id="back">‹ Scenarios</button><button class="chip" id="reset">Start over</button></div>
-    <div><span class="eyebrow">Role-play · ${esc(S.level || "A1 beginner")}</span><h2>${esc(sc.name)}</h2></div>
-    <div class="chat" id="chat">${log.map(m => m.role === "bot"
-      ? `<div class="msg bot"><div class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:8px"><span style="flex:1;min-width:0">${esc(m.es)}</span>${speakBtn(m.es)}</div>${m.en ? `<span class="tr">${esc(m.en)}</span>` : ""}${m.fix ? `<span class="fix">✏️ ${esc(m.fix)}</span>` : ""}</div>`
-      : `<div class="msg me">${esc(m.es)}</div>`).join("")}
-      ${sub.busy ? `<div class="msg bot"><span class="muted">Nagta-type…</span></div>` : ""}
-      ${sub.err ? `<div class="feedback no">${esc(sub.err)}</div>` : ""}
-    </div>
-    <form class="composer" id="cf"><input type="text" id="cIn" autocomplete="off" placeholder="Sumagot sa Tagalog…" ${sub.busy ? "disabled" : ""}><button class="btn" type="submit" ${sub.busy ? "disabled" : ""}>Send</button></form>
-    ${accentRow("#cIn")}`;
-  wireAccents(el);
-  $("#back", el).onclick = () => { sub = null; render(); };
-  $("#reset", el).onclick = () => { chats[sc.id] = [{ role: "bot", es: sc.open, en: sc.openEn }]; sub.err = null; render(); };
-  const inp = $("#cIn", el);
-  if (sub.draft) inp.value = sub.draft;
-  inp.oninput = () => sub.draft = inp.value;
-  if (!sub.busy) inp.focus({ preventScroll: true });
-  $("#cf", el).onsubmit = async e => {
-    e.preventDefault();
-    const text = inp.value.trim(); if (!text || sub.busy) return;
-    log.push({ role: "me", es: text }); sub.draft = ""; sub.busy = true; sub.err = null; render();
-    window.scrollTo(0, document.body.scrollHeight);
-    const sample = await getSample();
-    if (!sample) { sub.busy = false; sub.err = "Chat needs the Claude app or claude.ai, signed in. Flashcards, stories and drills work everywhere."; log.pop(); sub.draft = text; render(); return; }
-    const transcript = log.map(m => (m.role === "bot" ? "Partner: " : "Learner: ") + m.es).join("\n");
-    const prompt = `You are ${sc.role}, role-playing with an English-speaking learner of Tagalog (Filipino) at CEFR level ${S.level || "A1 beginner"}.
-Rules:
-- Stay in character and keep the scene moving. Reply in natural, simple everyday Tagalog suited to the level: 1-3 short sentences, end with a question or prompt so the learner keeps talking.
-- Speak the way people in the Philippines really do: use po/opo where the role calls for respect, and common English loanwords (Taglish) only where a Filipino naturally would.
-- If the learner's last message has Tagalog mistakes or uses English, write a short, kind correction in English showing the corrected Spanish sentence. If it was correct, set "correction" to "".
-Return ONLY JSON: {"reply": "<Tagalog reply>", "english": "<English translation of reply>", "correction": "<correction or empty>"}
-
-Conversation so far:
-${transcript}`;
-    try {
-      const r = await sample.json(prompt, { cache: false, modelTier: "quick" });
-      log.push({ role: "bot", es: String(r.reply || "…"), en: String(r.english || ""), fix: String(r.correction || "") });
-      addXP(3);
-      say(String(r.reply || ""));
-    } catch (err) {
-      log.pop(); sub.draft = text;
-      sub.err = err && err.code === "not_granted" ? "Chat wasn't allowed. You can turn it on from this page's permissions." : err && err.code === "rate_limited" ? "Too many messages at once. Wait a minute and send again." : "Couldn't reach your chat partner. Check your connection and send again.";
-    }
-    sub.busy = false;
-    if (tab === "talk") { render(); window.scrollTo(0, document.body.scrollHeight); }
-  };
 }
 
 /* boot */
