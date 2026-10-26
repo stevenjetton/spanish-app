@@ -202,6 +202,13 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .pool { display: flex; flex-wrap: wrap; gap: 8px; }
 .pool-chip { font-size: 1.05rem; padding: 10px 14px; }
 .pool-chip.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.mic { justify-self: center; width: 96px; height: 96px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; box-shadow: 0 0 0 0 var(--accent-soft); }
+.mic svg { width: 40px; height: 40px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.mic.on { background: var(--bad); }
+@media (prefers-reduced-motion: no-preference) { .mic.on { animation: pulse 1.2s infinite; } @keyframes pulse { 0% { box-shadow: 0 0 0 0 var(--bad-soft); } 100% { box-shadow: 0 0 0 22px transparent; } } }
+.sp-rate { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sp-skip { justify-self: center; background: none; border: 0; color: var(--accent); font-weight: 700; padding: 8px; }
+.sp-answer { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: var(--accent); line-height: 1.2; }
 .hear { display: block; font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
 .hear a { font-weight: 700; }
 .seg-t { font-weight: 700; color: var(--accent); }
@@ -641,6 +648,7 @@ let tab = "home";
 function go(t) {
   tab = t;
   try { speechSynthesis.cancel(); } catch (e) {}
+  releaseMic();
   document.querySelectorAll("nav.tabs button").forEach(b => { if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   render();
   window.scrollTo(0, 0);
@@ -685,7 +693,7 @@ function viewHome(el) {
     </div>
     <div class="grid2">
       <button class="action" data-go="stories"><span class="eyebrow">Read</span><b>Short stories</b><span class="small muted">${S.storiesDone.length} of ${STORIES.length} finished</span></button>
-      <button class="action" data-go="practice" data-mode="quiz"><span class="eyebrow">Review</span><b>Quick quiz</b><span class="small muted">10 questions, both directions</span></button>
+      <button class="action" data-go="practice" data-mode="speak"><span class="eyebrow">Speak</span><b>Magsalita</b><span class="small muted">Say it out loud, then check</span></button>
       ${voice ? `<button class="action" data-go="practice" data-mode="listen"><span class="eyebrow">Listen</span><b>Ear training</b><span class="small muted">Hear it, pick the meaning</span></button>` : `<button class="action" data-go="practice" data-mode="write"><span class="eyebrow">Write</span><b>Write it</b><span class="small muted">See English, type Tagalog</span></button>`}
       <button class="action" data-go="practice" data-mode="roots"><span class="eyebrow">Grammar</span><b>Root builder</b><span class="small muted">See how verbs grow from a root</span></button>
     </div>
@@ -900,10 +908,12 @@ function viewPractice(el) {
   if (sub && sub.type === "verbs") return viewVerbs(el);
   if (sub && sub.type === "write") return viewWrite(el);
   if (sub && sub.type === "roots") return viewRoots(el);
+  if (sub && sub.type === "speak") return viewSpeak(el);
   el.innerHTML = `
     <h1>Praktis</h1>
     <p class="muted">Short drills. Each round is 10 questions.</p>
     <div class="story-list">
+      <button class="story-item" data-m="speak"><span class="lvl">🎙</span><span><h3>Magsalita</h3><span class="small muted">See English, say the Tagalog out loud, then check</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="roots"><span class="lvl">ugat</span><span><h3>Root builder</h3><span class="small muted">See the route from root to each form, then match the forms</span></span><span class="small muted">›</span></button>
       <button class="story-item" data-m="quiz"><span class="lvl">Aa</span><span><h3>Quick quiz</h3><span class="small muted">Pick the right meaning, both directions</span></span><span class="small muted">›</span></button>
       ${voice ? `<button class="story-item" data-m="listen"><span class="lvl">♪</span><span><h3>Ear training</h3><span class="small muted">Hear Tagalog, choose what it means</span></span><span class="small muted">›</span></button>` : ""}
@@ -1051,6 +1061,99 @@ function viewVerbs(el) {
   }
   $("#back", el).onclick = back;
   el.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { sub.mode = b.dataset.v; render(); });
+}
+
+/* ================= MAGSALITA (say it out loud before you see the answer) ================= */
+// The answer stays hidden until the learner records themselves. Where the microphone is blocked
+// (inside claude.ai), the learner says it aloud and taps instead.
+let micStream = null, recorder = null, recTimer = null;
+async function getMic() {
+  if (micStream) return micStream;
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error("unsupported");
+  micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  return micStream;
+}
+function releaseMic() {
+  clearTimeout(recTimer);
+  try { if (recorder && recorder.state === "recording") recorder.stop(); } catch (e) {}
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+}
+function speakPool() {
+  // Short phrases the learner has started in their flashcards first, then the survival basics.
+  const short = c => c[0].split(" ").length <= 6 && !c[0].includes("…") && !c[0].includes(" / ");
+  const all = DECKS.flatMap(d => d.cards).filter(short);
+  const seen = all.filter(c => S.cards[c[0]]);
+  return seen.length >= 10 ? seen : seen.concat(DECKS[0].cards.filter(short).filter(c => !S.cards[c[0]]));
+}
+function viewSpeak(el) {
+  if (!sub.items) { sub.items = shuffle(speakPool()).slice(0, 10); sub.i = 0; sub.right = 0; sub.state = "prompt"; sub.tries = 0; }
+  const back = () => { releaseMic(); if (sub.url) URL.revokeObjectURL(sub.url); sub = null; render(); };
+  if (sub.i >= sub.items.length) {
+    releaseMic();
+    el.innerHTML = `<div class="card empty"><span class="eyebrow">Magsalita</span><h2>${sub.right}/${sub.items.length}</h2>
+      <p class="muted">${sub.right >= 8 ? "Ang galing! You said almost everything right." : "Keep going. Speaking from memory is the hardest skill, and every round makes it easier."}</p>
+      <div class="row" style="justify-content:center"><button class="btn" id="again">Another round</button><button class="btn ghost" id="b">Done</button></div></div>`;
+    $("#again", el).onclick = () => { sub = { type: "speak" }; render(); };
+    $("#b", el).onclick = back;
+    return;
+  }
+  const c = sub.items[sub.i];
+  const review = sub.state === "review";
+  el.innerHTML = `
+    <div class="row between"><button class="back" id="back">‹ Practice</button><span class="small muted">${sub.i + 1} / ${sub.items.length} · ${sub.right} said right</span></div>
+    <div class="card" style="display:grid;gap:10px;justify-items:center;text-align:center">
+      <span class="eyebrow">Say it in Tagalog</span>
+      <div class="prompt-big">${esc(c[1])}</div>
+      ${review ? `<div class="sp-answer">${esc(c[0])}</div>${c[2] ? `<p class="small muted">${esc(c[2])}</p>` : ""}` : `<p class="small muted">${sub.tries ? "Try it once more, out loud." : "Say the whole phrase out loud before you look."}</p>`}
+    </div>
+    ${review ? `
+      ${sub.url ? `<div class="card" style="display:grid;gap:8px"><span class="eyebrow">You said</span><audio controls src="${sub.url}" style="width:100%"></audio></div>` : ""}
+      <div class="card" style="display:grid;gap:6px"><span class="eyebrow">Compare with a native speaker</span>${hearLinks(c[0])}</div>
+      <div class="sp-rate"><button class="btn ghost" id="retry">Try again</button><button class="btn" id="ok">I said it right</button></div>
+      <button class="sp-skip" id="skip">Not yet, next phrase</button>`
+    : sub.noMic ? `
+      <p class="small muted" style="text-align:center">${esc(sub.noMic)}</p>
+      <button class="btn block" id="said">I said it out loud</button>`
+    : `
+      <button class="mic${sub.state === "recording" ? " on" : ""}" id="mic" aria-label="${sub.state === "recording" ? "Stop recording" : "Start recording"}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <p class="small muted" style="text-align:center">${sub.state === "recording" ? "Recording… tap again when you've finished" : "Tap the microphone and speak"}</p>`}`;
+  $("#back", el).onclick = back;
+  const reveal = () => { sub.state = "review"; render(); };
+  const mic = $("#mic", el);
+  if (mic) mic.onclick = async () => {
+    if (sub.state === "recording") { clearTimeout(recTimer); recorder.stop(); return; }
+    try {
+      const stream = await getMic();
+      const chunks = [];
+      recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        if (!sub || sub.type !== "speak") return; // left the screen mid-recording
+        if (sub.url) URL.revokeObjectURL(sub.url);
+        sub.url = chunks.length ? URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType || "audio/mp4" })) : null;
+        reveal();
+      };
+      recorder.start();
+      sub.state = "recording"; render();
+      recTimer = setTimeout(() => { if (recorder.state === "recording") recorder.stop(); }, 10000);
+    } catch (e) {
+      sub.noMic = e && e.name === "NotAllowedError"
+        ? "Microphone access was blocked. Allow it in Settings → Safari → Microphone (or for this app), or say the phrase out loud and tap below."
+        : "The microphone isn't available here (inside claude.ai it's blocked). Say the phrase out loud, then tap below. In the installed app you can record yourself.";
+      render();
+    }
+  };
+  const said = $("#said", el); if (said) said.onclick = reveal;
+  const next = ok => {
+    if (ok) { sub.right++; addXP(3); }
+    else if (S.cards[c[0]]) { S.cards[c[0]].due = Date.now(); save(); }
+    if (sub.url) { URL.revokeObjectURL(sub.url); sub.url = null; }
+    sub.i++; sub.state = "prompt"; sub.tries = 0; render(); window.scrollTo(0, 0);
+  };
+  const ok = $("#ok", el); if (ok) ok.onclick = () => next(true);
+  const skip = $("#skip", el); if (skip) skip.onclick = () => next(false);
+  const retry = $("#retry", el); if (retry) retry.onclick = () => { if (S.cards[c[0]]) { S.cards[c[0]].due = Date.now(); save(); } if (sub.url) { URL.revokeObjectURL(sub.url); sub.url = null; } sub.tries++; sub.state = "prompt"; render(); };
 }
 
 /* ================= ROOT BUILDER ================= */
