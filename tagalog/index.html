@@ -1071,8 +1071,8 @@ const ROUTES = {
 };
 Object.entries(ROUTES).forEach(([v, fs]) => fs.forEach((f, i) => { if (f.replace(/[[\]{}()]/g, "") !== VERBS[v].forms[i]) console.error("Route doesn't match verb form:", v, f); }));
 const ROUTE_HOW = {
-  "-um-": "Put -um- after the root's first consonant: k + um + ain = kumain. For ongoing, copy the first syllable and put -um- inside it: kumakain. For future, just copy the first syllable: kakain.",
-  "um-vowel": "When the root starts with a vowel, um- goes in front: umalis. Ongoing and future copy only that first vowel: umaalis, aalis.",
+  "-um-": "Put -um- after the root's first consonant: k + um + ain = kumain. For ongoing, copy the first syllable and put -um- inside it: kumakain. For future, just copy the first syllable: kakain. The infinitive and the completed form are spelled the same (kumain = \"to eat\" or \"ate\"); context tells you which.",
+  "um-vowel": "When the root starts with a vowel, um- goes in front: umalis. Ongoing and future copy only that first vowel: umaalis, aalis. As with all -um- verbs, the infinitive and the completed form are spelled the same: umalis = \"to leave\" or \"left\".",
   "mag-": "mag- for the infinitive and the future, nag- for done and ongoing. Ongoing and future also copy the root's first syllable: nagtatrabaho, magtatrabaho.",
   "ma-": "ma- for the infinitive and the future, na- for done and ongoing. Ongoing and future copy the root's first syllable: naliligo, maliligo.",
   "-in": "-in goes at the end for the infinitive: kainin. Done and ongoing put -in- inside instead: kinain, kinakain. The future copies the first syllable and keeps -in at the end: kakainin."
