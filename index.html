@@ -597,8 +597,10 @@ function viewCards(el) {
   const decks = allDecks();
   el.innerHTML = `
     <div class="row between"><h1>Tarjetas</h1><button class="chip" id="dirBtn">${S.dir === "es-en" ? "ES → EN" : "EN → ES"}</button></div>
-    <p class="muted">Spaced repetition: cards you know come back less often. ${newLeft()} new cards left today.</p>
-    <button class="btn block" id="studyAll" ${totalDue() || newLeft() ? "" : "disabled"}>Study all due (${totalDue()})</button>
+    <p class="muted">Spaced repetition: cards you know come back less often. ${newLeft()} new cards left today. You can always study ahead.</p>
+    <button class="btn block" id="studyAll">${totalDue() || newLeft() ? `Study all due (${totalDue()})` : "Nothing due: study ahead"}</button>
+    <div class="row between"><label for="newPer" class="small">New cards per day</label>
+      <select id="newPer" style="width:auto">${[5, 10, 20, 30, 50].map(n => `<option value="${n}" ${n === S.newPerDay ? "selected" : ""}>${n}</option>`).join("")}</select></div>
     <div class="grid2">${decks.map(d => {
       const l = learnedCount(d), du = dueCount(d);
       return `<button class="deck" data-deck="${d.id}"><span class="eyebrow">${esc(d.es)}</span><h3>${esc(d.name)}</h3>
@@ -611,6 +613,7 @@ function viewCards(el) {
     <div class="card" id="pbList" style="padding-block:4px"></div>`;
   $("#dirBtn", el).onclick = () => { S.dir = S.dir === "es-en" ? "en-es" : "es-en"; save(); render(); };
   $("#studyAll", el).onclick = () => { sub = { type: "study", deck: "all" }; render(); };
+  $("#newPer", el).onchange = e => { S.newPerDay = +e.target.value; save(); render(); };
   el.querySelectorAll("[data-deck]").forEach(b => b.onclick = () => { sub = { type: "browse", deck: b.dataset.deck }; render(); window.scrollTo(0, 0); });
   const listEl = $("#pbList", el);
   const drawPB = q => {
@@ -641,14 +644,15 @@ function viewBrowse(el) {
   $("#quiz", el).onclick = () => { sub = { type: "quiz", deck: d.id }; go("practice"); };
 }
 
-function buildQueue(deckId) {
-  const decks = deckId === "all" ? allDecks() : allDecks().filter(d => d.id === deckId);
-  const cards = decks.flatMap(d => d.cards);
+const scopeCards = deckId => deckId === "all" ? DECKS.flatMap(d => d.cards).concat(S.mine) : (allDecks().find(d => d.id === deckId) || { cards: [] }).cards;
+// Study ahead: "new" ignores the daily limit, "ahead" reviews learned cards before they're due (soonest first).
+const EXTRA_NEW = 10, AHEAD = 20;
+function buildQueue(deckId, mode) {
+  const cards = scopeCards(deckId);
+  if (mode === "new") return cards.filter(c => !S.cards[c[0]]).slice(0, EXTRA_NEW);
+  if (mode === "ahead") return cards.filter(c => S.cards[c[0]] && !isDue(c[0])).sort((a, b) => S.cards[a[0]].due - S.cards[b[0]].due).slice(0, AHEAD);
   const due = shuffle(cards.filter(c => isDue(c[0])));
-  let fresh = cards.filter(c => !S.cards[c[0]]);
-  if (deckId === "all") fresh = DECKS.flatMap(d => d.cards).filter(c => !S.cards[c[0]]).concat(S.mine.filter(c => !S.cards[c[0]]));
-  fresh = fresh.slice(0, newLeft());
-  return due.concat(fresh);
+  return due.concat(cards.filter(c => !S.cards[c[0]]).slice(0, newLeft()));
 }
 function schedule(es, grade) { // grade: 0 again, 1 hard, 2 good, 3 easy
   const isNew = !S.cards[es];
@@ -674,10 +678,15 @@ function viewStudy(el) {
   if (!sub.queue) { sub.queue = buildQueue(sub.deck); sub.done = 0; }
   const q = sub.queue;
   if (!q.length) {
+    const pool = scopeCards(sub.deck), freshN = pool.filter(c => !S.cards[c[0]]).length, aheadN = pool.filter(c => S.cards[c[0]] && !isDue(c[0])).length;
     el.innerHTML = `<button class="back" id="back">‹ Decks</button>
       <div class="card empty"><h2>${sub.done ? "¡Muy bien!" : "All caught up"}</h2>
-      <p class="muted">${sub.done ? `You reviewed ${sub.done} card${sub.done > 1 ? "s" : ""}.` : "Nothing is due right now."} ${newLeft() ? "" : "You've also used today's new cards."}</p>
-      <div class="row" style="justify-content:center"><button class="btn" id="more">Read a story</button><button class="btn ghost" id="quiz">Quick quiz</button></div></div>`;
+      <p class="muted">${sub.done ? `You reviewed ${sub.done} card${sub.done > 1 ? "s" : ""}.` : "Nothing is due right now."} ${newLeft() ? "" : "Today's new cards are used up, but you can keep going."}</p>
+      <div class="row" style="justify-content:center">${freshN ? `<button class="btn" id="moreNew">Learn ${Math.min(EXTRA_NEW, freshN)} more</button>` : ""}${aheadN ? `<button class="btn ${freshN ? "ghost" : ""}" id="ahead">Review ahead (${Math.min(AHEAD, aheadN)})</button>` : ""}</div>
+      <div class="row" style="justify-content:center"><button class="btn ghost" id="more">Read a story</button><button class="btn ghost" id="quiz">Quick quiz</button></div></div>`;
+    const startMore = mode => { sub.queue = buildQueue(sub.deck, mode); sub.done = 0; render(); window.scrollTo(0, 0); };
+    if ($("#moreNew", el)) $("#moreNew", el).onclick = () => startMore("new");
+    if ($("#ahead", el)) $("#ahead", el).onclick = () => startMore("ahead");
     $("#back", el).onclick = () => { sub = null; render(); };
     $("#more", el).onclick = () => { sub = null; go("stories"); };
     $("#quiz", el).onclick = () => { sub = { type: "quiz", deck: "all" }; go("practice"); };
