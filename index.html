@@ -194,6 +194,16 @@ details summary { cursor: pointer; }
 .back { background: none; border: 0; color: var(--accent); font-weight: 700; padding: 6px 0; justify-self: start; }
 .tip { background: var(--sun-soft); border-radius: var(--r); padding: 14px; display: grid; gap: 4px; }
 .empty { text-align: center; padding: 28px 16px; display: grid; gap: 10px; justify-items: center; }
+
+/* Dark mode: pastel text alone blends into the light text, so highlights also get a tinted background. */
+@media (prefers-color-scheme: dark) {
+:root:not([data-theme="light"]) .rp-end { background: color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+:root:not([data-theme="light"]) .rp-end { padding: 0 2px; }
+:root:not([data-theme="light"]) .rp-change { background: var(--sun); color: #2a1c00; padding: 0 2px; }
+}
+:root[data-theme="dark"] .rp-end { background: color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+:root[data-theme="dark"] .rp-end { padding: 0 2px; }
+:root[data-theme="dark"] .rp-change { background: var(--sun); color: #2a1c00; padding: 0 2px; }
 </style>
 
 <div class="wrap">
