@@ -581,17 +581,21 @@ const EXT = 'target="_blank" rel="noopener"';
 const ITALKI = "https://www.italki.com/en/teachers/filipino%28tagalog%29", PREPLY = "https://preply.com/en/online/tagalog-tutors";
 function cleanTl(t) { return String(t).split(" / ")[0].replace(/[…!?¿¡.,«»—]/g, "").replace(/\s+/g, " ").trim(); }
 function forvoUrl(w) { return "https://forvo.com/word/" + encodeURIComponent(w.toLowerCase()) + "/#tl"; }
-function gtUrl(t) { return "https://translate.google.com/?sl=tl&tl=en&op=translate&text=" + encodeURIComponent(t); }
+// Tagalog.com is the checking source throughout: its dictionary pages have native-speaker audio and work for
+// conjugated forms. It looks words up one at a time, so phrases link each word separately.
+function tlcomUrl(w) { return "https://www.tagalog.com/dictionary/" + encodeURIComponent(w.toLowerCase()); }
+const phraseWords = t => [...new Set(cleanTl(t).split(" ").filter(Boolean))];
 function hearLinks(text) {
-  const t = cleanTl(text), single = !t.includes(" ");
-  return `<span class="hear">Hear it: ${single ? `<a ${EXT} href="${forvoUrl(t)}">Forvo</a> · <a ${EXT} href="https://www.tagalog.com/dictionary/${encodeURIComponent(t.toLowerCase())}">Tagalog.com</a> · ` : ""}<a ${EXT} href="${gtUrl(t)}">Google Translate</a></span>`;
+  const words = phraseWords(text);
+  if (words.length === 1) return `<span class="hear">Hear it: <a ${EXT} href="${tlcomUrl(words[0])}">Tagalog.com</a> · <a ${EXT} href="${forvoUrl(words[0])}">Forvo</a></span>`;
+  return `<span class="hear">Hear each word on Tagalog.com: ${words.map(w => `<a ${EXT} href="${tlcomUrl(w)}">${esc(w)}</a>`).join(" · ")}</span>`;
 }
 function formLinks(v) {
   return `<span class="hear">Hear each form on Forvo: ${[...new Set(VERBS[v].forms)].map(f => `<a ${EXT} href="${forvoUrl(f)}">${f}</a>`).join(" · ")}</span>`;
 }
 function hearCard() {
   return `<div class="card" style="display:grid;gap:8px"><h3>Hear real Filipino voices</h3>
-    <p class="small">Every phrase has <b>Hear it</b> links. <b>Forvo</b> has recordings by native speakers, best for single words. <b>Tagalog.com</b> dictionary entries include audio. <b>Google Translate</b> reads whole phrases and stories with a voice built for Filipino; it's computer-generated but sounds natural. They open in your browser.</p>
+    <p class="small">Every phrase has <b>Hear it</b> links. <b>Forvo</b> has recordings by native speakers, best for single words. <b>Tagalog.com</b> is the main check: its dictionary pages have native-speaker audio, including for verb forms. For a phrase, each word links to its own Tagalog.com page. They open in your browser.</p>
     <p class="small">For real conversation, a Filipino tutor is the best teacher: <a ${EXT} href="${ITALKI}">italki</a> · <a ${EXT} href="${PREPLY}">Preply</a></p></div>`;
 }
 const SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
@@ -876,7 +880,7 @@ function viewStory(el) {
   el.innerHTML = `
     <button class="back" id="back">‹ All stories</button>
     <div><span class="eyebrow">Level ${s.level}</span><h1>${esc(s.title)}</h1><p class="muted">${esc(s.en)}</p></div>
-    <div class="row">${voice ? `<button class="btn" id="play">▶ Listen to the story</button>` : ""}<button class="btn ghost" id="toggleAll">${allShown ? "Hide English" : "Show all English"}</button><a class="btn ghost" style="text-decoration:none;display:inline-flex;align-items:center" ${EXT} href="${gtUrl(s.lines.map(l => l[0].replace(/[—«»]/g, "")).join(" "))}">Hear it on Google Translate</a></div>
+    <div class="row">${voice ? `<button class="btn" id="play">▶ Listen to the story</button>` : ""}<button class="btn ghost" id="toggleAll">${allShown ? "Hide English" : "Show all English"}</button></div>
     <div class="card" style="padding:6px">${s.lines.map((l, i) => `<button class="sent" data-i="${i}">${esc(l[0])}${sub.show[i] ? `<span class="en">${esc(l[1])}</span>` : ""}</button>`).join("")}</div>
     <div class="card gloss"><div class="row between"><h3>Key words</h3><span class="small muted">Add to your flashcards</span></div>
       ${s.gloss.map((g, i) => {
@@ -1253,9 +1257,10 @@ function wireGate(el, maxMs) {
     }
   });
 }
-// Beside any Tagalog word: a microphone to say it and a Google Translate link to check it.
+// Beside any Tagalog word: a microphone to say it and a Tagalog.com link to check it.
+// For a multi-word entry the link goes to its main (longest) word, since Tagalog.com looks up single words.
 function wordTools(word) {
-  return `<span class="tools">${miniGate(formKey(word), word, true)}<a class="g-link" ${EXT} href="${gtUrl(word)}" aria-label="Check ${esc(word)} on Google Translate">Google</a></span>`;
+  return `<span class="tools">${miniGate(formKey(word), word, true)}${(() => { const ws = phraseWords(word), main = ws.reduce((a, b) => b.length > a.length ? b : a, ""); return `<a class="g-link" ${EXT} href="${tlcomUrl(main)}" aria-label="Check ${esc(main)} on Tagalog.com">Tagalog.com</a>`; })()}</span>`;
 }
 // "Say each form" list for a verb: every distinct form gets its own small microphone.
 const formKey = f => "form:" + f;
