@@ -595,7 +595,16 @@ function cleanTl(t) { return String(t).split(" / ")[0].replace(/[…!?¿¡.,«»
 function forvoUrl(w) { return "https://forvo.com/word/" + encodeURIComponent(w.toLowerCase()) + "/#tl"; }
 // Tagalog.com is the checking source throughout: its dictionary pages have native-speaker audio and work for
 // conjugated forms. It looks words up one at a time, so phrases link each word separately.
-function tlcomUrl(w) { return "https://www.tagalog.com/dictionary/" + encodeURIComponent(w.toLowerCase()); }
+// Tagalog.com has a page for each verb's infinitive, not for its other aspect forms (those pages come up blank).
+// A conjugated form links to its infinitive's page instead, with a text fragment that scrolls to that form's box.
+const TLCOM_ASPECT = ["Infinitive", "Completed (Past)", "Uncompleted (Present)", "Contemplated (Future)"];
+const TLCOM_FORM = {};
+Object.values(VERBS).forEach(v => v.forms.forEach((f, i) => { if (!TLCOM_FORM[f]) TLCOM_FORM[f] = [v.forms[0], i]; }));
+function tlcomUrl(w) {
+  const k = w.toLowerCase(), hit = TLCOM_FORM[k];
+  if (hit && hit[0] !== k) return "https://www.tagalog.com/dictionary/" + encodeURIComponent(hit[0]) + "#:~:text=" + encodeURIComponent(TLCOM_ASPECT[hit[1]]);
+  return "https://www.tagalog.com/dictionary/" + encodeURIComponent(k);
+}
 const phraseWords = t => [...new Set(cleanTl(t).split(" ").filter(Boolean))];
 function hearLinks(text) {
   const words = phraseWords(text);
