@@ -1219,20 +1219,22 @@ function gateHTML(label, text) {
   if (!speakOn()) return "";
   const g = gateState("main");
   if (g.done) return `<div class="card gate" style="display:grid;gap:8px">
-      <span class="eyebrow">You said</span>
-      ${g.url ? `<audio controls src="${g.url}" style="width:100%"></audio>` : `<span class="small muted">Said out loud ✓</span>`}
+      <span class="eyebrow">${g.skipped ? "Speaking" : "You said"}</span>
+      ${g.url ? `<audio controls src="${g.url}" style="width:100%"></audio>` : `<span class="small muted">${g.skipped ? "Skipped speaking this one" : "Said out loud ✓"}</span>`}
       ${text ? `<span class="small">Compare: ${hearLinks(text)}</span>` : ""}</div>`;
   return `<div class="card gate" style="display:grid;gap:10px;justify-items:center;text-align:center">
       <span class="eyebrow">Speak</span>
       <p><b>${esc(label)}</b></p>
       ${g.noMic ? `<p class="small muted">${esc(NO_MIC[g.noMic])}</p><button class="btn block" data-gsaid="main">I said it out loud</button>`
       : `<button class="mic${g.rec ? " on" : ""}" data-gmic="main" aria-label="${g.rec ? "Stop recording" : "Start recording"}">${MIC_SVG}</button>
-         <p class="small muted">${g.rec ? "Recording… tap again when you've finished" : "Tap the microphone and say it"}</p>`}</div>`;
+         <p class="small muted">${g.rec ? "Recording… tap again when you've finished" : "Tap the microphone and say it"}</p>`}
+      <button class="sp-skip" data-gskip="main">Skip speaking this time</button></div>`;
 }
 // A compact step for lists: one small microphone per item.
 function miniGate(k, label, always) {
   if (!speakOn() && !always) return "";
   const g = gateState(k);
+  if (g.done && g.skipped) return `<span class="small muted">skipped</span>`;
   if (g.done) return `<span class="mini-done">✓${g.url ? ` <button class="mini play" data-gplay="${esc(k)}" aria-label="Play what you said for ${esc(label)}">▶</button>` : ""}</span>`;
   if (g.noMic) return `<button class="mini said" data-gsaid="${esc(k)}">I said it</button>`;
   return `<button class="mini mic-s${g.rec ? " on" : ""}" data-gmic="${esc(k)}" aria-label="${g.rec ? "Stop recording" : "Say " + esc(label)}">${MIC_SVG}</button>`;
@@ -1241,6 +1243,11 @@ function wireGate(el, maxMs) {
   const gates = () => sub.gates || (sub.gates = {});
   const done = (k, url) => { if (!sub) return; gates()[k] = { done: true, url }; render(); };
   el.querySelectorAll("[data-gsaid]").forEach(b => b.onclick = () => done(b.dataset.gsaid, null));
+  // Skipping counts the step as done without a recording, so the learner can move on.
+  const stopRec = () => { clearTimeout(recTimer); if (recorder && recorder.state === "recording") recorder.stop(); };
+  const skip = keys => { if (!sub) return; keys.forEach(k => { if (!gateDone(k)) gates()[k] = { done: true, skipped: true }; }); stopRec(); render(); };
+  el.querySelectorAll("[data-gskip]").forEach(b => b.onclick = () => skip([b.dataset.gskip]));
+  el.querySelectorAll("[data-gskipall]").forEach(b => b.onclick = () => skip(b.dataset.gskipall.split("|").map(formKey)));
   el.querySelectorAll("[data-gplay]").forEach(b => b.onclick = () => { const u = gateState(b.dataset.gplay).url; if (u) new Audio(u).play().catch(() => {}); });
   el.querySelectorAll("[data-gmic]").forEach(b => b.onclick = async () => {
     const k = b.dataset.gmic, g = gates()[k] || (gates()[k] = {});
@@ -1279,7 +1286,8 @@ function sayFormsHTML(forms, title) {
   return `<div class="card say-forms" style="display:grid;gap:4px">
     <div class="row between"><span class="eyebrow">${esc(title)}</span><span class="small ${left ? "muted" : ""}" style="${left ? "" : "color:var(--good);font-weight:700"}">${left ? `${left} to go` : "All said ✓"}</span></div>
     ${forms.map(f => `<div class="say-row"><span class="say-word">${esc(f)}</span>${wordTools(f)}</div>`).join("")}
-    ${left ? `<p class="small muted">Tap each microphone and say the form out loud.</p>` : ""}</div>`;
+    ${left ? `<p class="small muted">Tap each microphone and say the form out loud.</p>
+      <button class="sp-skip" data-gskipall="${esc(forms.join("|"))}">Skip speaking these forms</button>` : ""}</div>`;
 }
 function speakToggleHTML() {
   return `<div class="card row between"><span><b>Speaking required</b><br><span class="small muted">Say each answer out loud before you can move on</span></span>
@@ -1341,7 +1349,8 @@ function viewRoots(el) {
   let body;
   const allForms = [...new Set(d.forms)];
   const formsSaid = allForms.every(f => gateDone(formKey(f)));
-  if (sub.mode === "route") body = route + (speakOn() && !formsSaid ? `<p class="small muted">Say each form out loud with its microphone to unlock Next verb.</p>` : "");
+  if (sub.mode === "route") body = route + (speakOn() && !formsSaid ? `<p class="small muted">Say each form out loud with its microphone to unlock Next verb.</p>
+    <button class="sp-skip" data-gskipall="${esc(allForms.join("|"))}">Skip speaking these forms</button>` : "");
   else {
     body = `
       <p class="small muted">Tap a row, then tap the form that fits it.</p>
