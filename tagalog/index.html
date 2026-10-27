@@ -210,9 +210,13 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .mini.said { background: var(--surface-2); color: var(--fg); font-size: 0.85rem; }
 .mini.play { background: var(--good-soft); color: var(--good); min-width: 36px; height: 36px; }
 .mini-done { display: inline-flex; align-items: center; gap: 8px; color: var(--good); font-weight: 800; }
+.mini.redo { background: var(--surface-2); color: var(--fg); min-width: 36px; width: 36px; height: 36px; padding: 0; }
+.mini.redo svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .say-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .say-row:last-of-type { border-bottom: 0; }
-.word-line { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.word-line { display: flex; justify-content: space-between; align-items: center; gap: 6px 10px; flex-wrap: wrap; }
+.word-line > .tools { margin-left: auto; }
+.word-line .route-form { white-space: nowrap; overflow-wrap: normal; }
 .word-line > :first-child { min-width: 0; }
 .tools { flex: none; display: inline-flex; align-items: center; gap: 6px; }
 .g-link { display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border-radius: 999px; background: var(--surface-2); color: var(--accent); font-size: 0.8rem; font-weight: 700; text-decoration: none; }
@@ -707,7 +711,7 @@ function render() {
 
 /* ================= HOME ================= */
 // Shown on the home screen so it's easy to tell whether an installed copy has picked up the latest update.
-const APP_VERSION = "2026-10-27 · Tagalog.com form links";
+const APP_VERSION = "2026-10-27 · re-record button";
 function viewHome(el) {
   const pts = S.days[today()] || 0, pct = Math.min(100, Math.round(pts / S.goal * 100));
   const due = totalDue(), nl = newLeft();
@@ -1244,7 +1248,7 @@ function gateHTML(label, text) {
   const g = gateState("main");
   if (g.done) return `<div class="card gate" style="display:grid;gap:8px">
       <span class="eyebrow">${g.skipped ? "Speaking" : "You said"}</span>
-      ${g.url ? `<audio controls src="${g.url}" style="width:100%"></audio>` : `<span class="small muted">${g.skipped ? "Skipped speaking this one" : "Said out loud ✓"}</span>`}
+      <div class="row" style="flex-wrap:nowrap">${g.url ? `<audio controls src="${g.url}" style="flex:1;min-width:0"></audio>` : `<span class="small muted" style="flex:1">${g.skipped ? "Skipped speaking this one" : "Said out loud ✓"}</span>`}${redoBtn("main", label)}</div>
       ${text ? `<span class="small">Compare: ${hearLinks(text)}</span>` : ""}</div>`;
   return `<div class="card gate" style="display:grid;gap:10px;justify-items:center;text-align:center">
       <span class="eyebrow">Speak</span>
@@ -1254,12 +1258,15 @@ function gateHTML(label, text) {
          <p class="small muted">${g.rec ? "Recording… tap again when you've finished" : "Tap the microphone and say it"}</p>`}
       <button class="sp-skip" data-gskip="main">Skip speaking this time</button></div>`;
 }
+// Re-record: clears the recording and starts a new one straight away.
+const REDO_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>`;
+const redoBtn = (k, label) => `<button class="mini redo" data-gredo="${esc(k)}" aria-label="Record again${label ? ": " + esc(label) : ""}">${REDO_SVG}</button>`;
 // A compact step for lists: one small microphone per item.
 function miniGate(k, label, always) {
   if (!speakOn() && !always) return "";
   const g = gateState(k);
-  if (g.done && g.skipped) return `<span class="small muted">skipped</span>`;
-  if (g.done) return `<span class="mini-done">✓${g.url ? ` <button class="mini play" data-gplay="${esc(k)}" aria-label="Play what you said for ${esc(label)}">▶</button>` : ""}</span>`;
+  if (g.done && g.skipped) return `<span class="mini-done"><span class="small muted">skipped</span>${redoBtn(k, label)}</span>`;
+  if (g.done) return `<span class="mini-done">✓${g.url ? ` <button class="mini play" data-gplay="${esc(k)}" aria-label="Play what you said for ${esc(label)}">▶</button>` : ""}${redoBtn(k, label)}</span>`;
   if (g.noMic) return `<button class="mini said" data-gsaid="${esc(k)}">I said it</button>`;
   return `<button class="mini mic-s${g.rec ? " on" : ""}" data-gmic="${esc(k)}" aria-label="${g.rec ? "Stop recording" : "Say " + esc(label)}">${MIC_SVG}</button>`;
 }
@@ -1273,8 +1280,14 @@ function wireGate(el, maxMs) {
   el.querySelectorAll("[data-gskip]").forEach(b => b.onclick = () => skip([b.dataset.gskip]));
   el.querySelectorAll("[data-gskipall]").forEach(b => b.onclick = () => skip(b.dataset.gskipall.split("|").map(formKey)));
   el.querySelectorAll("[data-gplay]").forEach(b => b.onclick = () => { const u = gateState(b.dataset.gplay).url; if (u) new Audio(u).play().catch(() => {}); });
-  el.querySelectorAll("[data-gmic]").forEach(b => b.onclick = async () => {
-    const k = b.dataset.gmic, g = gates()[k] || (gates()[k] = {});
+  el.querySelectorAll("[data-gredo]").forEach(b => b.onclick = () => {
+    const k = b.dataset.gredo, old = gates()[k];
+    if (old && old.url) URL.revokeObjectURL(old.url);
+    gates()[k] = {}; record(k);
+  });
+  el.querySelectorAll("[data-gmic]").forEach(b => b.onclick = () => record(b.dataset.gmic));
+  async function record(k) {
+    const g = gates()[k] || (gates()[k] = {});
     if (g.rec) { clearTimeout(recTimer); recorder.stop(); return; }
     // Only one recording at a time: finish any other one first.
     if (recorder && recorder.state === "recording") { clearTimeout(recTimer); recorder.stop(); }
@@ -1295,7 +1308,7 @@ function wireGate(el, maxMs) {
       if (k !== "main") toast(why === "blocked" ? "Microphone blocked: say it out loud and tap “I said it”" : "No microphone here: say it out loud and tap “I said it”");
       render();
     }
-  });
+  }
 }
 // Beside any Tagalog word: a microphone to say it and a Tagalog.com link to check it.
 // For a multi-word entry the link goes to its main (longest) word, since Tagalog.com looks up single words.
