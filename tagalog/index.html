@@ -1349,8 +1349,7 @@ function viewRoots(el) {
   let body;
   const allForms = [...new Set(d.forms)];
   const formsSaid = allForms.every(f => gateDone(formKey(f)));
-  if (sub.mode === "route") body = route + (speakOn() && !formsSaid ? `<p class="small muted">Say each form out loud with its microphone to unlock Next verb.</p>
-    <button class="sp-skip" data-gskipall="${esc(allForms.join("|"))}">Skip speaking these forms</button>` : "");
+  if (sub.mode === "route") body = route + (speakOn() && !formsSaid ? `<p class="small muted">Say each form out loud with its microphone to unlock Next verb, or skip speaking.</p>` : "");
   else {
     body = `
       <p class="small muted">Tap a row, then tap the form that fits it.</p>
@@ -1373,7 +1372,9 @@ function viewRoots(el) {
       <span class="muted">${esc(d.en[0].replace(/^to /, ""))} · makes <b>${v}</b>, a ${d.group} verb</span></div>
     <div class="chips"><button class="chip" data-mode="match" aria-pressed="${sub.mode === "match"}">Match the forms</button><button class="chip" data-mode="route" aria-pressed="${sub.mode === "route"}">See the route</button></div>
     ${body}
-    <button class="btn block ${R.done || sub.mode === "route" ? "" : "ghost"}" id="nextVerb" ${(sub.mode === "route" || R.done) && !formsSaid ? "disabled" : ""}>Next verb</button>`;
+    ${(sub.mode === "route" || R.done) && !formsSaid
+      ? `<div class="sp-rate"><button class="btn ghost" data-gskipall="${esc(allForms.join("|"))}">Skip speaking</button><button class="btn" id="nextVerb" disabled>Next verb</button></div>`
+      : `<button class="btn block ${R.done || sub.mode === "route" ? "" : "ghost"}" id="nextVerb">Next verb</button>`}`;
   wireGate(el, 20000);
   $("#back", el).onclick = () => { resetGate(); sub = null; render(); };
   el.querySelectorAll("[data-verb]").forEach(b => b.onclick = () => { resetGate(); sub.round = newRoundFor(b.dataset.verb); render(); });
