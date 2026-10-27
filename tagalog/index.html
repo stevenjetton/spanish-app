@@ -212,6 +212,10 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .mini-done { display: inline-flex; align-items: center; gap: 8px; color: var(--good); font-weight: 800; }
 .say-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .say-row:last-of-type { border-bottom: 0; }
+.word-line { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.word-line > :first-child { min-width: 0; }
+.tools { flex: none; display: inline-flex; align-items: center; gap: 6px; }
+.g-link { display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border-radius: 999px; background: var(--surface-2); color: var(--accent); font-size: 0.8rem; font-weight: 700; text-decoration: none; }
 .say-word { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; }
 .mic { justify-self: center; width: 96px; height: 96px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; box-shadow: 0 0 0 0 var(--accent-soft); }
 .mic svg { width: 40px; height: 40px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
@@ -877,7 +881,7 @@ function viewStory(el) {
     <div class="card gloss"><div class="row between"><h3>Key words</h3><span class="small muted">Add to your flashcards</span></div>
       ${s.gloss.map((g, i) => {
         const has = S.mine.some(m => m[0] === g[0]);
-        return `<div class="gloss-row"><span class="w">${esc(g[0])} <span class="muted" style="font-weight:400">— ${esc(g[1])}</span></span>${speakBtn(g[0])}<button class="add" data-g="${i}" ${has ? "disabled" : ""}>${has ? "Added" : "+ Add"}</button></div>`;
+        return `<div class="gloss-row"><span class="w">${esc(g[0])} <span class="muted" style="font-weight:400">— ${esc(g[1])}</span></span>${speakBtn(g[0])}${wordTools(g[0])}<button class="add" data-g="${i}" ${has ? "disabled" : ""}>${has ? "Added" : "+ Add"}</button></div>`;
       }).join("")}</div>
     ${gateHTML("Read the whole story out loud before the questions", "")}
     ${gateOpen() ? `<div class="card" style="display:grid;gap:14px"><h3>Did you understand?</h3>
@@ -1055,7 +1059,7 @@ function viewVerbs(el) {
     <h1>Pandiwa</h1>
     <p class="muted small">Tagalog verbs show whether an action is done, ongoing, or coming up. Repeat the first syllable for ongoing and future: kain → kumakain → kakain.</p>
     <div class="chips"><button class="chip" data-v="drill" aria-pressed="${sub.mode === "drill"}">Drill</button><button class="chip" data-v="table" aria-pressed="${sub.mode === "table"}">Show tables</button></div>`;
-  const table = (v, hi) => `<table class="conj">${ASPECTS.map((a, i) => `<tr><td>${a}</td><td>${i === hi ? `<b>${VERBS[v].forms[i]}</b>` : VERBS[v].forms[i]} <span class="muted small">${esc(VERBS[v].en[i])}</span></td></tr>`).join("")}</table>`;
+  const table = (v, hi) => `<table class="conj">${ASPECTS.map((a, i) => `<tr><td>${a}</td><td><div class="word-line"><span>${i === hi ? `<b>${VERBS[v].forms[i]}</b>` : VERBS[v].forms[i]} <span class="muted small">${esc(VERBS[v].en[i])}</span></span>${wordTools(VERBS[v].forms[i])}</div></td></tr>`).join("")}</table>`;
   if (sub.mode === "table") {
     el.innerHTML = head + names.map(v => `<div class="card"><div class="row between"><h3>${v} <span class="muted small" style="font-weight:400">${esc(VERBS[v].en[0])} · root ${VERBS[v].root} · ${VERBS[v].group}</span></h3>${speakBtn(VERBS[v].forms.join(", "))}</div>
       ${table(v, -1)}${VERBS[v].note ? `<p class="small muted" style="margin-top:8px">${esc(VERBS[v].note)}</p>` : ""}<p class="small muted" style="margin-top:6px">Source: ${srcLink(VERBS[v].src)}</p>${formLinks(v)}</div>`).join("");
@@ -1083,6 +1087,7 @@ function viewVerbs(el) {
     };
     const n = $("#next", el); if (n) n.onclick = () => { resetGate(); sub.q = null; render(); };
   }
+  wireGate(el);
   $("#back", el).onclick = back;
   el.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { sub.mode = b.dataset.v; render(); });
 }
@@ -1212,8 +1217,8 @@ function gateHTML(label, text) {
          <p class="small muted">${g.rec ? "Recording… tap again when you've finished" : "Tap the microphone and say it"}</p>`}</div>`;
 }
 // A compact step for lists: one small microphone per item.
-function miniGate(k, label) {
-  if (!speakOn()) return "";
+function miniGate(k, label, always) {
+  if (!speakOn() && !always) return "";
   const g = gateState(k);
   if (g.done) return `<span class="mini-done">✓${g.url ? ` <button class="mini play" data-gplay="${esc(k)}" aria-label="Play what you said for ${esc(label)}">▶</button>` : ""}</span>`;
   if (g.noMic) return `<button class="mini said" data-gsaid="${esc(k)}">I said it</button>`;
@@ -1248,6 +1253,10 @@ function wireGate(el, maxMs) {
     }
   });
 }
+// Beside any Tagalog word: a microphone to say it and a Google Translate link to check it.
+function wordTools(word) {
+  return `<span class="tools">${miniGate(formKey(word), word, true)}<a class="g-link" ${EXT} href="${gtUrl(word)}" aria-label="Check ${esc(word)} on Google Translate">Google</a></span>`;
+}
 // "Say each form" list for a verb: every distinct form gets its own small microphone.
 const formKey = f => "form:" + f;
 function sayFormsHTML(forms, title) {
@@ -1255,7 +1264,7 @@ function sayFormsHTML(forms, title) {
   const left = forms.filter(f => !gateDone(formKey(f))).length;
   return `<div class="card say-forms" style="display:grid;gap:4px">
     <div class="row between"><span class="eyebrow">${esc(title)}</span><span class="small ${left ? "muted" : ""}" style="${left ? "" : "color:var(--good);font-weight:700"}">${left ? `${left} to go` : "All said ✓"}</span></div>
-    ${forms.map(f => `<div class="say-row"><span class="say-word">${esc(f)}</span>${miniGate(formKey(f), f)}</div>`).join("")}
+    ${forms.map(f => `<div class="say-row"><span class="say-word">${esc(f)}</span>${wordTools(f)}</div>`).join("")}
     ${left ? `<p class="small muted">Tap each microphone and say the form out loud.</p>` : ""}</div>`;
 }
 function speakToggleHTML() {
@@ -1309,7 +1318,7 @@ function viewRoots(el) {
   const route = `
     <div class="card route" style="display:grid;gap:12px">
       ${ASPECTS.map((a, i) => `<div class="route-step"><span class="eyebrow">${a}</span>
-        <div class="route-form">${routeHTML(ROUTES[v][i])}</div><span class="small muted">“${esc(d.en[i])}”</span></div>`).join("")}
+        <div class="word-line"><div class="route-form">${routeHTML(ROUTES[v][i])}</div>${wordTools(d.forms[i])}</div><span class="small muted">“${esc(d.en[i])}”</span></div>`).join("")}
       ${ROUTE_LEGEND}
       <p class="small">${esc(routeHow(v))}${d.note ? " " + esc(d.note) : ""}</p>
       ${formLinks(v)}
@@ -1318,7 +1327,7 @@ function viewRoots(el) {
   let body;
   const allForms = [...new Set(d.forms)];
   const formsSaid = allForms.every(f => gateDone(formKey(f)));
-  if (sub.mode === "route") body = route + sayFormsHTML(allForms, "Say each form out loud");
+  if (sub.mode === "route") body = route + (speakOn() && !formsSaid ? `<p class="small muted">Say each form out loud with its microphone to unlock Next verb.</p>` : "");
   else {
     body = `
       <p class="small muted">Tap a row, then tap the form that fits it.</p>
