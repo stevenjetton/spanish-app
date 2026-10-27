@@ -706,6 +706,8 @@ function render() {
 }
 
 /* ================= HOME ================= */
+// Shown on the home screen so it's easy to tell whether an installed copy has picked up the latest update.
+const APP_VERSION = "2026-10-27 · Tagalog.com form links";
 function viewHome(el) {
   const pts = S.days[today()] || 0, pct = Math.min(100, Math.round(pts / S.goal * 100));
   const due = totalDue(), nl = newLeft();
@@ -746,7 +748,8 @@ function viewHome(el) {
       <label for="goalSel" class="small">Daily goal</label>
       <select id="goalSel" style="width:auto">${[15, 30, 50, 80].map(g => `<option value="${g}" ${g === S.goal ? "selected" : ""}>${g} pts · ${{ 15: "casual", 30: "regular", 50: "serious", 80: "intense" }[g]}</option>`).join("")}</select>
     </div>
-    ${hearCard()}${sourcesCard()}${voiceNote()}<p class="small muted">${progressDoc ? "Progress is saved to your account." : "Progress is saved on this device."} Points: 1 per card, 2 per right answer, 10 per story.</p>`;
+    ${hearCard()}${sourcesCard()}${voiceNote()}<p class="small muted">${progressDoc ? "Progress is saved to your account." : "Progress is saved on this device."} Points: 1 per card, 2 per right answer, 10 per story.</p>
+    <p class="small muted">App version ${APP_VERSION}</p>`;
   $("#startToday", el).onclick = () => { sub = { type: "study", deck: "all" }; go("cards"); };
   el.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { sub = b.dataset.mode ? { type: b.dataset.mode } : null; go(b.dataset.go); });
   $("#goalSel", el).onchange = e => { S.goal = +e.target.value; save(); render(); };
