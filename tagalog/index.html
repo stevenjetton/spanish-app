@@ -200,6 +200,14 @@ input[type="text"], textarea, select { width: 100%; font: inherit; padding: 12px
 .slot-form { font-size: 1.3rem; color: var(--muted); }
 .slot.filled .slot-form { color: var(--fg); }
 .pool { display: flex; flex-wrap: wrap; gap: 8px; }
+.match { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 10px; align-items: start; }
+.match .pool { flex-direction: column; flex-wrap: nowrap; position: sticky; top: 76px; }
+.match .pool-chip { width: 100%; text-align: center; padding: 12px 8px; font-size: 1.1rem; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
+.match .slot { padding: 10px 12px; }
+.match .slot-form { font-size: 1.15rem; }
+.slot.drop { border-color: var(--accent); border-style: solid; background: var(--accent-soft); }
+.pool-chip.dragging { opacity: 0.35; }
+.drag-ghost { position: fixed; z-index: 30; pointer-events: none; transform: translate(-50%, -65%) scale(1.08); box-shadow: 0 10px 24px rgba(0,0,0,.3); background: var(--surface); }
 .pool-chip { font-size: 1.05rem; padding: 10px 14px; }
 .pool-chip.wrong { border-color: var(--bad); background: var(--bad-soft); }
 .btn:disabled { opacity: .45; }
@@ -711,7 +719,7 @@ function render() {
 
 /* ================= HOME ================= */
 // Shown on the home screen so it's easy to tell whether an installed copy has picked up the latest update.
-const APP_VERSION = "2026-10-27 · re-record button";
+const APP_VERSION = "2026-10-28 · drag-and-drop matching";
 function viewHome(el) {
   const pts = S.days[today()] || 0, pct = Math.min(100, Math.round(pts / S.goal * 100));
   const due = totalDue(), nl = newLeft();
@@ -1389,14 +1397,14 @@ function viewRoots(el) {
   if (sub.mode === "route") body = route + (speakOn() && !formsSaid ? `<p class="small muted">Say each form out loud with its microphone to unlock Next verb, or skip speaking.</p>` : "");
   else {
     body = `
-      <p class="small muted">Tap a row, then tap the form that fits it.</p>
-      <div class="slots">${ASPECTS.map((a, i) => {
+      ${R.done ? "" : `<p class="small muted">Drag each form onto its row, or tap a form to put it in the highlighted row.</p>`}
+      <div class="${R.done ? "" : "match"}"><div class="slots">${ASPECTS.map((a, i) => {
         const f = R.slots[i];
         return `<button class="slot${f ? " filled" : ""}${!f && R.active === i ? " active" : ""}" data-slot="${i}" ${f ? "disabled" : ""}>
           <span class="slot-label"><span class="eyebrow">${a}</span><span class="small">“${esc(d.en[i])}”</span></span>
           <span class="slot-form">${f ? routeHTML(ROUTES[v][i]) : "?"}</span></button>`;
       }).join("")}</div>
-      ${R.done ? "" : `<div class="pool">${R.pool.map(c => `<button class="chip pool-chip${R.wrong === c.id ? " wrong" : ""}" data-chip="${c.id}" ${c.used ? "hidden" : ""}>${esc(c.t)}</button>`).join("")}</div>`}
+      ${R.done ? "" : `<div class="pool" aria-label="Forms">${R.pool.map(c => `<button class="chip pool-chip${R.wrong === c.id ? " wrong" : ""}" data-chip="${c.id}" ${c.used ? "hidden" : ""}>${esc(c.t)}</button>`).join("")}</div>`}</div>
       ${R.wrong !== null ? `<div class="feedback no">Not that one for “${esc(d.en[R.active])}”. Look at the affix and try again.</div>` : ""}
       ${R.done ? `<div class="feedback ok">Tama! Here's how each form is built from <b>${esc(d.root)}</b>.</div>${route}` : ""}
       ${sayFormsHTML([...new Set(R.slots.filter(Boolean))], "Say each form as you place it")}`;
@@ -1418,14 +1426,58 @@ function viewRoots(el) {
   el.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { sub.mode = b.dataset.mode; render(); });
   $("#nextVerb", el).onclick = () => { resetGate(); const others = names.filter(n => n !== v); sub.round = newRoundFor(others[Math.floor(Math.random() * others.length)]); sub.mode = "match"; render(); window.scrollTo(0, 0); };
   el.querySelectorAll("[data-slot]").forEach(b => b.onclick = () => { R.active = +b.dataset.slot; R.wrong = null; render(); });
-  el.querySelectorAll("[data-chip]").forEach(b => b.onclick = () => {
-    const c = R.pool.find(x => x.id === +b.dataset.chip);
-    if (c.t !== d.forms[R.active]) { R.wrong = c.id; render(); return; }
-    c.used = true; R.slots[R.active] = c.t; R.wrong = null; addXP(1);
+  // Put form `id` into row `slot` (a tap uses the highlighted row; a drag uses the row it's dropped on).
+  const place = (id, slot) => {
+    const c = R.pool.find(x => x.id === id), y = window.scrollY;
+    R.active = slot;
+    if (c.t !== d.forms[slot]) { R.wrong = c.id; render(); window.scrollTo(0, y); return; }
+    c.used = true; R.slots[slot] = c.t; R.wrong = null; addXP(1);
     const next = R.slots.findIndex(x => !x);
     if (next === -1) { R.done = true; addXP(3); } else R.active = next;
-    render();
-  });
+    render(); window.scrollTo(0, y);
+  };
+  el.querySelectorAll("[data-chip]").forEach(b => b.onclick = () => { if (b.dataset.dragged) { delete b.dataset.dragged; return; } place(+b.dataset.chip, R.active); });
+  wireDrag(el, place);
+}
+// Drag a form chip onto a row. Pointer events work for touch and mouse alike; the chip itself
+// stays put and a copy follows the finger, and the row under it lights up.
+function wireDrag(el, place) {
+  el.querySelectorAll("[data-chip]").forEach(chip => chip.addEventListener("pointerdown", e => {
+    if (e.button > 0) return;
+    const sx = e.clientX, sy = e.clientY;
+    let ghost = null, over = null, px = sx, py = sy, raf = 0;
+    const findSlot = () => {
+      const hit = document.elementFromPoint(px, py), slot = hit && hit.closest(".slot:not(.filled)");
+      if (over !== slot) { if (over) over.classList.remove("drop"); over = slot; if (over) over.classList.add("drop"); }
+    };
+    // Near the top of the screen or the tab bar, scroll so rows out of view can be reached.
+    const edge = () => {
+      const bottom = ($("nav.tabs") || { getBoundingClientRect: () => ({ top: innerHeight }) }).getBoundingClientRect().top;
+      const dy = py > bottom - 70 ? 10 : py < 110 ? -10 : 0;
+      if (dy) { window.scrollBy(0, dy); findSlot(); }
+      raf = requestAnimationFrame(edge);
+    };
+    const move = ev => {
+      if (!ghost) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) return;
+        ghost = chip.cloneNode(true); ghost.classList.add("drag-ghost"); ghost.removeAttribute("data-chip");
+        document.body.appendChild(ghost); chip.classList.add("dragging"); raf = requestAnimationFrame(edge);
+      }
+      ev.preventDefault();
+      px = ev.clientX; py = ev.clientY;
+      ghost.style.left = px + "px"; ghost.style.top = py + "px";
+      findSlot();
+    };
+    const end = ev => {
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", end); window.removeEventListener("pointercancel", end);
+      cancelAnimationFrame(raf);
+      if (!ghost) return;
+      ghost.remove(); chip.classList.remove("dragging"); chip.dataset.dragged = "1";
+      if (over) { over.classList.remove("drop"); if (ev.type === "pointerup") place(+chip.dataset.chip, +over.dataset.slot); }
+    };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", end); window.addEventListener("pointercancel", end);
+  }));
 }
 
 /* boot */
